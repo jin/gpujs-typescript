@@ -21,8 +21,10 @@ var fps: FPS = {
   frameNumber : 0,
   getFPS : function() {
     this.frameNumber++;
-    var d = new Date().getTime(), currentTime = ( d - this.startTime ) / 1000, result = Math.floor( ( this.frameNumber / currentTime ) );
-    if(currentTime > 1) {
+    var d = new Date().getTime()
+    var currentTime = (d - this.startTime) / 1000
+    var result = Math.floor(this.frameNumber / currentTime);
+    if (currentTime > 1) {
       this.startTime = new Date().getTime();
       this.frameNumber = 0;
     }
@@ -60,24 +62,31 @@ function change(el: HTMLInputElement): void {
   }
 }
 
-function sqr(x: number): number {
-  return x * x;
-}
-
-function dist(x1: number, y1: number, x2: number, y2: number): number {
-  return Math.sqrt(sqr(x2 - x1) + sqr(y2 - y1));
+interface KernelOptions {
+  dimensions?: number[],
+  debug?: boolean,
+  graphical?: boolean,
+  safeTextureReadHack?: boolean,
+  mode?: string,
+  constants?: {}
 }
 
 function doit(mode) {
-  var opt = {
+  var opt: KernelOptions = {
     dimensions: [800,600],
     debug: true,
     graphical: true,
     safeTextureReadHack: false,
-    constants: { OBJCOUNT: objects[0],
-      EMPTY: ObjType.EMPTY,    SPHERE: ObjType.SPHERE,   CUBOID: ObjType.CUBOID,
-      CYLINDER: ObjType.CYLINDER,   CONE: ObjType.CONE,   TRIANGLE: ObjType.TRIANGLE },
-      mode: mode
+    constants: {
+      OBJCOUNT: objects[0],
+      EMPTY: ObjType.EMPTY,
+      SPHERE: ObjType.SPHERE,
+      CUBOID: ObjType.CUBOID,
+      CYLINDER: ObjType.CYLINDER,
+      CONE: ObjType.CONE,
+      TRIANGLE: ObjType.TRIANGLE
+    },
+    mode: mode
   };
 
   var y = gpu.createKernel(function(Camera,Lights,Objects) {
@@ -118,7 +127,15 @@ function renderLoop(): void {
   requestAnimationFrame(renderLoop);     // to see how fast this could run...
 }
 
-gpu.addFunction(sqr);
+function square(x: number): number {
+  return x * x;
+}
+
+function dist(x1: number, y1: number, x2: number, y2: number): number {
+  return Math.sqrt(square(x2 - x1) + square(y2 - y1));
+}
+
+gpu.addFunction(square);
 gpu.addFunction(dist);
 
 var mode: Mode = Mode.CPU; // CPU mode on load
