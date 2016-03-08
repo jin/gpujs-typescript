@@ -15,7 +15,8 @@ function Enum(constantsList) {
   }
 }
 
-var ObjTyp = new Enum(['EMPTY', 'SPHERE', 'CUBOID', 'CYLINDER', 'CONE', 'TRIANGLE']);
+
+enum ObjTyp { EMPTY, SPHERE, CUBOID, CYLINDER, CONE, TRIANGLE }
 
 var fps = { startTime : 0, frameNumber : 0,
   getFPS : function() {
