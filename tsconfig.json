@@ -1,0 +1,16 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "noImplicitAny": true,
+        "removeComments": true,
+        "preserveConstEnums": true,
+        "sourceMap": true,
+        "allowJs": true,
+        "watch": true,
+        "out": "./app.js"
+    },
+    "files": [
+        "lib/gpu.js",
+        "app.ts"
+    ]
+}
