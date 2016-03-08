@@ -8,6 +8,7 @@ function p(x) {
 var gpu = new GPU();
 
 enum ObjType { EMPTY, SPHERE, CUBOID, CYLINDER, CONE, TRIANGLE }
+enum Mode { GPU, CPU }
 
 interface FPS {
   startTime: number,
@@ -50,11 +51,11 @@ var objects: any[] = [
 ]
 
 function change(el: HTMLInputElement): void {
-  if (selection === 0) {
-    selection = 1;
+  if (mode === Mode.CPU) {
+    mode = Mode.GPU;
     el.value = "Using GPU";
   } else {
-    selection = 0;
+    mode = Mode.CPU;
     el.value = "Using CPU";
   }
 }
@@ -98,7 +99,7 @@ function doit(mode) {
 
 function renderLoop(): void {
   f.innerHTML = "" + fps.getFPS();
-  if (selection === 0) {
+  if (mode === Mode.CPU) {
     mycode(camera,lights,objects);
     var cv = document.getElementsByTagName("canvas")[0];
     var bdy = cv.parentNode;
@@ -120,11 +121,11 @@ function renderLoop(): void {
 gpu.addFunction(sqr);
 gpu.addFunction(dist);
 
-var selection: number = 0; // CPU mode on load
+var mode: Mode = Mode.CPU; // CPU mode on load
 
 var mykernel = doit("gpu");
-var mycode   = doit("cpu");
-mykernel(camera,lights,objects);
+var mycode = doit("cpu");
+mykernel(camera, lights, objects);
 var canvas = mykernel.getCanvas();
 document.getElementsByTagName('body')[0].appendChild(canvas);
 var f = document.querySelector("#fps");
