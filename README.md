@@ -9,7 +9,7 @@ npm install typescript
 ### Running
 
 ```
-tsc # builds to app.ts
+tsc # builds to app.js
 open index.html
 ```
 

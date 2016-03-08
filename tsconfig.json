@@ -7,10 +7,10 @@
         "sourceMap": true,
         "allowJs": true,
         "watch": true,
-        "out": "./app.js"
+        "out": "./lib/app.js"
     },
     "files": [
-        "lib/gpu.js",
-        "app.ts"
+        "vendor/gpu.js",
+        "src/app.ts"
     ]
 }
