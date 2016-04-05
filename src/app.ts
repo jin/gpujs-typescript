@@ -153,7 +153,8 @@ let createKernel = function(mode: Mode, entities: number[][]) : any {
   return kernel;
 }
 
-let renderer = function(gpuKernel, cpuKernel, entities, camera, lights) : () => void {
+let renderer = function(gpuKernel: any, cpuKernel: any, entities: number[][], 
+                        camera: number[], lights: number[]) : () => void {
 
   let fps = {
     startTime: 0,
@@ -182,7 +183,7 @@ let renderer = function(gpuKernel, cpuKernel, entities, camera, lights) : () => 
     updateFPS(fps.getFPS());
     let cv = document.getElementsByTagName("canvas")[0];
     let bdy = cv.parentNode;
-    let newCanvas;
+    let newCanvas: Node;
 
     if (mode === Mode.CPU) {
       cpuKernel(camera, lights, entities);
@@ -232,7 +233,7 @@ let sphere_1_opts: EntityOpts = {
   red: 1.0,
   green: 0.7,
   blue: 0.7,
-  x: 100,
+  x: 700,
   y: 500,
   z: 500,
   radius: 40,
@@ -247,10 +248,10 @@ let sphere_2_opts: EntityOpts = {
   red: 1.0,
   green: 0.7,
   blue: 0.2,
-  x: 200,
+  x: 700,
   y: 600,
   z: 200,
-  radius: 20,
+  radius: 80,
   specularReflection: 0.2,
   lambertianReflection: 0.7,
   ambientColor: 0.1,
