@@ -17,11 +17,8 @@ interface FPS {
 }
 
 var fps: FPS = {
-
   startTime: 0,
-
   frameNumber: 0,
-
   getFPS: function() {
     this.frameNumber++;
     var d = new Date().getTime()
@@ -33,10 +30,9 @@ var fps: FPS = {
     }
     return result;
   }
-
 };
 
-enum ObjType { EMPTY, SPHERE, CUBOID, CYLINDER, CONE, TRIANGLE }
+enum EntityType { EMPTY, SPHERE, CUBOID, CYLINDER, CONE, TRIANGLE }
 enum Mode { GPU, CPU }
 
 // scene.js
@@ -61,17 +57,20 @@ let entity = new Entity();
 
 var objects: any[] = [
   2, // number of objects
-  ObjType.SPHERE, 13, 1.0, 1.0, 0.7, 0.2, 0.7, 0.1, 1.0, 100, 500, 500, 40, // typ,recsz,r,g,b,spec,lamb,amb,opac, x,y,z,rad,
-  ObjType.SPHERE, 13, 0.0, 0.0, 1.0, 0.2, 0.7, 0.1, 1.0, 200, 600, 200, 20 // typ,recsz,r,g,b,spec,lamb,amb,opac, x,y,z,rad,
+  EntityType.SPHERE, 13, 1.0, 1.0, 0.7, 0.2, 0.7, 0.1, 1.0, 100, 500, 500, 40, // typ,recsz,r,g,b,spec,lamb,amb,opac, x,y,z,rad,
+  EntityType.SPHERE, 13, 0.0, 0.0, 1.0, 0.2, 0.7, 0.1, 1.0, 200, 600, 200, 20 // typ,recsz,r,g,b,spec,lamb,amb,opac, x,y,z,rad,
 ]
 
 function change(el: HTMLInputElement): void {
-  if (mode === Mode.CPU) {
-    mode = Mode.GPU;
-    el.value = "Using GPU";
-  } else {
-    mode = Mode.CPU;
-    el.value = "Using CPU";
+  switch (mode) {
+    case Mode.CPU:
+      mode = Mode.GPU;
+      el.value = "Using GPU";
+      break;
+    case Mode.GPU:
+      mode = Mode.CPU;
+      el.value = "Using CPU";
+      break;
   }
 }
 
@@ -104,12 +103,12 @@ function doit(mode) {
     safeTextureReadHack: false,
     constants: {
       OBJCOUNT: objects[0],
-      EMPTY: ObjType.EMPTY,
-      SPHERE: ObjType.SPHERE,
-      CUBOID: ObjType.CUBOID,
-      CYLINDER: ObjType.CYLINDER,
-      CONE: ObjType.CONE,
-      TRIANGLE: ObjType.TRIANGLE
+      EMPTY: EntityType.EMPTY,
+      SPHERE: EntityType.SPHERE,
+      CUBOID: EntityType.CUBOID,
+      CYLINDER: EntityType.CYLINDER,
+      CONE: EntityType.CONE,
+      TRIANGLE: EntityType.TRIANGLE
     },
     mode: mode
   };
@@ -137,8 +136,12 @@ function updateFPS(fps) {
 }
 
 function renderLoop() : void {
+
+  // Pause render loop if not running
   if (!isRunning) { return; }
+
   updateFPS(fps.getFPS());
+
   if (mode === Mode.CPU) {
     mycode(camera,lights,objects);
     var cv = document.getElementsByTagName("canvas")[0];
