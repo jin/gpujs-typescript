@@ -7,16 +7,7 @@ function p(x) {
 
 // Global states
 
-var gpu = new GPU();
-var isRunning = true;
-
-interface FPS {
-  startTime: number,
-  frameNumber: number,
-  getFPS: () => number
-}
-
-var fps: FPS = {
+var fps = {
   startTime: 0,
   frameNumber: 0,
   getFPS: function() {
@@ -32,36 +23,110 @@ var fps: FPS = {
   }
 };
 
-enum EntityType { EMPTY, SPHERE, CUBOID, CYLINDER, CONE, TRIANGLE }
-enum Mode { GPU, CPU }
-
 // scene.js
-var camera: number[] = [
+let camera: number[] = [
   0,1,2,                     // x,y,z coordinates
   4,4,4,                     // Direction normal vector
   45                         // field of view : example 45
 ];
 
-var lights: number[] = [
+let lights: number[] = [
   2,                         // number of lights
   200,200,200, 0,1,0,        // light 1, x,y,z location, and rgb colour (green)
   100,100,100, 1,1,1,        // light 2, x,y,z location, and rgb colour (white)
 ];
 
-class Entity {
-  constructor() {
-  }
+enum EntityType { EMPTY, SPHERE, CUBOID, CYLINDER, CONE, TRIANGLE }
+enum Mode { GPU, CPU }
+
+interface RGB {
+  red: number,
+  green: number,
+  blue: number
 }
 
-let entity = new Entity();
+interface XYZ {
+  x?: number,
+  y?: number,
+  z?: number
+}
 
-var objects: any[] = [
+interface Dimensions {
+  width?: number,
+  height?: number,
+  depth?: number,
+  radius?: number
+}
+
+interface EntityOpts {
+  entityType: EntityType,
+  dimensions: Dimensions,
+  coordinates: XYZ,
+  color: RGB,
+  lambertianReflection: number, // Lambertian model reflection 0 to 1
+  opacity: number, // 0 to 1
+  specularReflection: number,  // 0 to 1
+  ambientColor: number // 0 to 1
+}
+
+class Entity {
+
+  entityType: EntityType
+  dimensions: Dimensions
+  coordinates: XYZ
+  color: RGB
+  lambertianReflection: number // Lambertian model reflection 0 to 1
+  opacity: number // 0 to 1
+  specularReflection: number  // 0 to 1
+  ambientColor: number // 0 to 1
+
+  constructor(opts: EntityOpts) {
+    this.entityType = opts.entityType;
+    this.color = opts.color;
+    this.specularReflection = opts.specularReflection;
+    this.lambertianReflection = opts.lambertianReflection;
+    this.ambientColor = opts.ambientColor;
+    this.opacity = opts.opacity;
+    this.coordinates = opts.coordinates;
+    this.dimensions = opts.dimensions;
+  }
+
+}
+
+let sphere_1_opts: EntityOpts = {
+  entityType: EntityType.SPHERE,
+  color: { red: 1.0, green: 1.0, blue: 0.7 },
+  specularReflection: 0.2,
+  lambertianReflection: 0.7,
+  ambientColor: 0.1,
+  opacity: 1.0,
+  coordinates: { x: 100, y: 500, z: 500 },
+  dimensions: { radius: 40 }
+}
+
+let sphere_2_opts: EntityOpts = {
+  entityType: EntityType.SPHERE,
+  color: { red: 0.0, green: 0.0, blue: 0.7 },
+  specularReflection: 0.2,
+  lambertianReflection: 0.7,
+  ambientColor: 0.1,
+  opacity: 1.0,
+  coordinates: { x: 200, y: 600, z: 200 },
+  dimensions: { radius: 20 }
+}
+
+let entities: Entity[] = [
+  new Entity(sphere_1_opts),
+  new Entity(sphere_2_opts)
+]
+
+let objects: any[] = [
   2, // number of objects
   EntityType.SPHERE, 13, 1.0, 1.0, 0.7, 0.2, 0.7, 0.1, 1.0, 100, 500, 500, 40, // typ,recsz,r,g,b,spec,lamb,amb,opac, x,y,z,rad,
   EntityType.SPHERE, 13, 0.0, 0.0, 1.0, 0.2, 0.7, 0.1, 1.0, 200, 600, 200, 20 // typ,recsz,r,g,b,spec,lamb,amb,opac, x,y,z,rad,
 ]
 
-function change(el: HTMLInputElement): void {
+let toggleMode: (HTMLInputElement) => void = function(el) {
   switch (mode) {
     case Mode.CPU:
       mode = Mode.GPU;
@@ -74,15 +139,10 @@ function change(el: HTMLInputElement): void {
   }
 }
 
-function togglePause(el: HTMLInputElement) : void {
-  if (isRunning) {
-    el.value = "Start";
-    isRunning = false;
-  } else {
-    el.value = "Pause";
-    isRunning = true;
-    renderLoop();
-  }
+let togglePause: (HTMLInputElement) => void = function(el) {
+  el.value = isRunning ? "Start" : "Pause";
+  isRunning = !isRunning;
+  if (isRunning) { renderLoop() };
 }
 
 interface KernelOptions {
@@ -127,6 +187,7 @@ function doit(mode) {
       }
     }
   }, opt);
+
   return y;
 }
 
@@ -136,7 +197,6 @@ function updateFPS(fps) {
 }
 
 function renderLoop() : void {
-
   // Pause render loop if not running
   if (!isRunning) { return; }
 
@@ -169,11 +229,12 @@ function dist(x1: number, y1: number, x2: number, y2: number) : number {
   return Math.sqrt(square(x2 - x1) + square(y2 - y1));
 }
 
+let gpu = new GPU();
 gpu.addFunction(square);
 gpu.addFunction(dist);
 
-var mode: Mode = Mode.GPU; // GPU mode on load
-
+let isRunning = true;
+let mode: Mode = Mode.GPU; // GPU mode on load
 var mykernel = doit("gpu");
 var mycode = doit("cpu");
 mykernel(camera, lights, objects);
