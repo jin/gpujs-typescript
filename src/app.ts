@@ -39,6 +39,13 @@ let lights: number[] = [
 enum EntityType { EMPTY, SPHERE, CUBOID, CYLINDER, CONE, TRIANGLE }
 enum Mode { GPU, CPU }
 
+let stringOfMode = function(mode: Mode) : string {
+  switch(mode) {
+    case Mode.CPU: return "cpu";
+    case Mode.GPU: return "gpu";
+  }
+}
+
 interface RGB {
   red: number,
   green: number,
@@ -126,7 +133,7 @@ let objects: any[] = [
   EntityType.SPHERE, 13, 0.0, 0.0, 1.0, 0.2, 0.7, 0.1, 1.0, 200, 600, 200, 20 // typ,recsz,r,g,b,spec,lamb,amb,opac, x,y,z,rad,
 ]
 
-let toggleMode: (HTMLInputElement) => void = function(el) {
+let toggleMode = function(el: HTMLInputElement) : void {
   switch (mode) {
     case Mode.CPU:
       mode = Mode.GPU;
@@ -139,7 +146,7 @@ let toggleMode: (HTMLInputElement) => void = function(el) {
   }
 }
 
-let togglePause: (HTMLInputElement) => void = function(el) {
+let togglePause = function(el: HTMLInputElement) : void {
   el.value = isRunning ? "Start" : "Pause";
   isRunning = !isRunning;
   if (isRunning) { renderLoop() };
@@ -154,10 +161,10 @@ interface KernelOptions {
   constants?: {}
 }
 
-function doit(mode) {
+let createKernel = function(mode: Mode) : any {
 
   var opt: KernelOptions = {
-    dimensions: [800,600],
+    dimensions: [800, 600],
     debug: true,
     graphical: true,
     safeTextureReadHack: false,
@@ -170,10 +177,10 @@ function doit(mode) {
       CONE: EntityType.CONE,
       TRIANGLE: EntityType.TRIANGLE
     },
-    mode: mode
+    mode: stringOfMode(mode) // can be either cpu or gpu
   };
 
-  var y = gpu.createKernel(function(Camera,Lights,Objects) {
+  var kernel = gpu.createKernel(function(Camera, Lights, Objects) {
     var idx = 1;                                     // index for looking through all the objects
     var nextidx = 1;
     this.color(0.95,0.95,0.95);                      // By default canvas is light grey
@@ -188,31 +195,31 @@ function doit(mode) {
     }
   }, opt);
 
-  return y;
+  return kernel;
 }
 
-function updateFPS(fps) {
+let updateFPS = function(fps) : void {
   var f = document.querySelector("#fps");
-  f.innerHTML = "" + fps;
+  f.innerHTML = fps.toString();
 }
 
-function renderLoop() : void {
+let renderLoop = function() : void {
   // Pause render loop if not running
   if (!isRunning) { return; }
 
   updateFPS(fps.getFPS());
 
   if (mode === Mode.CPU) {
-    mycode(camera,lights,objects);
+    cpuKernel(camera,lights,objects);
     var cv = document.getElementsByTagName("canvas")[0];
     var bdy = cv.parentNode;
-    var newCanvas = mycode.getCanvas();
+    var newCanvas = cpuKernel.getCanvas();
     bdy.replaceChild(newCanvas, cv);
   } else {
-    mykernel(camera,lights,objects);
+    gpuKernel(camera,lights,objects);
     var cv = document.getElementsByTagName("canvas")[0];
     var bdy = cv.parentNode;
-    var newCanvas = mykernel.getCanvas();
+    var newCanvas = gpuKernel.getCanvas();
     bdy.replaceChild(newCanvas, cv);
   }
   objects[10] = (objects[10] + 2) % 900;
@@ -235,9 +242,11 @@ gpu.addFunction(dist);
 
 let isRunning = true;
 let mode: Mode = Mode.GPU; // GPU mode on load
-var mykernel = doit("gpu");
-var mycode = doit("cpu");
-mykernel(camera, lights, objects);
-var canvas = mykernel.getCanvas();
+let gpuKernel = createKernel(Mode.GPU);
+let cpuKernel = createKernel(Mode.CPU);
+
+gpuKernel(camera, lights, objects);
+var canvas = gpuKernel.getCanvas();
 document.getElementsByTagName('body')[0].appendChild(canvas);
+
 window.onload = renderLoop;
