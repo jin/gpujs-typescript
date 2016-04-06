@@ -58,7 +58,7 @@ namespace Entity {
       this.radius = opts.radius   || 0;
     }
 
-    toNumberArray() : number[] {
+    toVector() : number[] {
       let array = [
         this.entityType,           // 0
         this.x,                    // 1

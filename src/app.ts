@@ -2,76 +2,14 @@
 
 enum Mode { GPU, CPU }
 
-let toggleMode = function(el: HTMLInputElement) : void {
-  switch (mode) {
-    case Mode.CPU:
-      mode = Mode.GPU;
-      el.value = "Using GPU";
-      break;
-    case Mode.GPU:
-      mode = Mode.CPU;
-      el.value = "Using CPU";
-      break;
-  }
-}
-
 let togglePause = function(el: HTMLInputElement) : void {
   el.value = isRunning ? "Start" : "Pause";
   isRunning = !isRunning;
   if (isRunning) { renderLoop() };
 }
 
-let createKernel = function(mode: Mode, entities: number[][]) : any {
-
-  interface KernelOptions {
-    dimensions?: number[],
-    debug?: boolean,
-    graphical?: boolean,
-    safeTextureReadHack?: boolean,
-    mode?: string,
-    constants?: {}
-  }
-
-  let stringOfMode = function(mode: Mode) : string {
-    switch(mode) {
-      case Mode.CPU: return "cpu";
-      case Mode.GPU: return "gpu";
-    }
-  }
-
-  const opt: KernelOptions = {
-    dimensions: [800, 600],
-    debug: false,
-    graphical: true,
-    safeTextureReadHack: false,
-    constants: {
-      OBJCOUNT: entities.length,
-      EMPTY: Entity.Type.EMPTY,
-      SPHERE: Entity.Type.SPHERE,
-      CUBOID: Entity.Type.CUBOID,
-      CYLINDER: Entity.Type.CYLINDER,
-      CONE: Entity.Type.CONE,
-      TRIANGLE: Entity.Type.TRIANGLE
-    },
-    mode: stringOfMode(mode) // can be either cpu or gpu
-  };
-
-  let kernel = gpu.createKernel(function(Camera: number[], Lights: number[], Entities: number[][]) {
-    this.color(0.95, 0.95, 0.95);                      // By default canvas is light grey
-    for (var i = 0; i < this.constants.OBJCOUNT; i++) {     // Look at all object records
-      if (Entities[i][0] == this.constants.SPHERE) { // i.e. if it is a SPHERE...
-        if (dist(this.thread.x, this.thread.y, Entities[i][1], Entities[i][2]) < Entities[i][7]) {
-          this.color(Entities[i][8], Entities[i][9], Entities[i][10]);
-        }
-      }
-    }
-  }, opt);
-
-  return kernel;
-}
-
-let renderer = function(gpuKernel: any, cpuKernel: any, entities: number[][], 
-                        camera: number[], lights: number[]) : () => void {
+let renderer = function(gpuKernel: any, entities: number[][], 
+                        camera: number[][], lights: number[][]) : () => void {
 
   let fps = {
     startTime: 0,
@@ -99,18 +37,10 @@ let renderer = function(gpuKernel: any, cpuKernel: any, entities: number[][],
 
     updateFPS(fps.getFPS());
 
-    if (mode === Mode.CPU) {
-      cpuKernel(camera, lights, entities);
-      var cv = document.getElementsByTagName("canvas")[0];
-      var bdy = cv.parentNode;
-      var newCanvas = cpuKernel.getCanvas();
-    } else {
-      gpuKernel(camera, lights, entities);
-      var cv = document.getElementsByTagName("canvas")[0];
-      var bdy = cv.parentNode;
-      var newCanvas = gpuKernel.getCanvas();
-    }
-
+    gpuKernel(camera, lights, entities);
+    let cv = document.getElementsByTagName("canvas")[0];
+    let bdy = cv.parentNode;
+    let newCanvas = gpuKernel.getCanvas();
     bdy.replaceChild(newCanvas, cv);
 
     entities[0][1] = (entities[0][1] + 2) % 900;
@@ -119,25 +49,74 @@ let renderer = function(gpuKernel: any, cpuKernel: any, entities: number[][],
     // requestAnimationFrame(nextTick);     // to see how fast this could run...
   }
 
-  const canvas = gpuKernel.getCanvas();
-  document.getElementsByTagName('body')[0].appendChild(canvas);
-
   return nextTick;
+}
+
+let createKernel = function(mode: Mode, entities: number[][]) : any {
+
+  interface KernelOptions {
+    dimensions?: number[],
+    debug?: boolean,
+    graphical?: boolean,
+    safeTextureReadHack?: boolean,
+    mode?: string,
+    constants?: {}
+  }
+
+  let stringOfMode = function(mode: Mode) : string {
+    switch(mode) {
+      case Mode.CPU: return "cpu";
+      case Mode.GPU: return "gpu";
+    }
+  }
+
+  const opt: KernelOptions = {
+    dimensions: [600, 600],
+    debug: true,
+    graphical: true,
+    safeTextureReadHack: false,
+    constants: {
+      ENTITY_COUNT: entities.length,
+      EMPTY: Entity.Type.EMPTY,
+      SPHERE: Entity.Type.SPHERE,
+      CUBOID: Entity.Type.CUBOID,
+      CYLINDER: Entity.Type.CYLINDER,
+      CONE: Entity.Type.CONE,
+      TRIANGLE: Entity.Type.TRIANGLE
+    }
+  };
+
+  let kernel = gpu.createKernel(function(camera: number[], lights: number[], entities: number[][]) {
+    this.color(0.95, 0.95, 0.95);                      // By default canvas is light grey
+    for (var i = 0; i < this.constants.ENTITY_COUNT; i++) {     // Look at all object records
+      if (entities[i][0] == this.constants.SPHERE) { // i.e. if it is a SPHERE...
+        if (dist(this.thread.x, this.thread.y, entities[i][1], entities[i][2]) < entities[i][7]) {
+          this.color(entities[i][8],entities[i][9] + i, entities[i][10]);
+        }
+      } if (entities[i][0] == this.constants.CYLINDER) {
+        if (dist(this.thread.x, 0, entities[i][1], 0) < entities[i][7] &&
+           this.thread.y - entities[i][2] < entities[i][5] && 
+           this.thread.y - entities[i][2] >= 0) {
+          this.color(entities[i][8],entities[i][9] + i, entities[i][10]);
+        }
+      }
+    }
+  }, opt).mode(stringOfMode(mode));
+
+  return kernel;
 }
 
 // entity declarations
 
 // scene.js
-let camera: number[] = [
-  0,1,2,                     // x,y,z coordinates
-  4,4,4,                     // Direction normal vector
-  45                         // field of view : example 45
+let camera: number[][] = [
+  [300, 300, 0],                     // x,y,z coordinates
+  [0, 0, 1],                     // Direction normal vector
+  [45]                         // field of view : example 45
 ];
 
-let lights: number[] = [
-  2,                         // number of lights
-  200,200,200, 0,1,0,        // light 1, x,y,z location, and rgb colour (green)
-  100,100,100, 1,1,1,        // light 2, x,y,z location, and rgb colour (white)
+let lights: number[][] = [
+  [200, 200, 200, 0, 1, 0]        // light 1, x,y,z location, and rgb colour (green
 ];
 
 let sphere_1_opts: Entity.Opts = {
@@ -160,9 +139,9 @@ let sphere_2_opts: Entity.Opts = {
   red: 1.0,
   green: 0.7,
   blue: 0.2,
-  x: 700,
-  y: 600,
-  z: 200,
+  x: 500,
+  y: 100,
+  z: 100,
   radius: 80,
   specularReflection: 0.2,
   lambertianReflection: 0.7,
@@ -170,20 +149,44 @@ let sphere_2_opts: Entity.Opts = {
   opacity: 1.0,
 }
 
-let opts: Entity.Opts[] = [sphere_1_opts, sphere_2_opts];
+let cylinder_opts: Entity.Opts = {
+  entityType: Entity.Type.CYLINDER,
+  red: 0.3,
+  green: 1.0,
+  blue: 0.6,
+  x: 100,
+  y: 100,
+  z: 100,
+  radius: 80,
+  height: 200,
+  specularReflection: 0.2,
+  lambertianReflection: 0.7,
+  ambientColor: 0.5,
+  opacity: 1.0
+}
+
+let opts: Entity.Opts[] = [sphere_1_opts, sphere_2_opts, cylinder_opts];
 let entities: number[][] = opts.map(function(opt) {
-  return (new Entity.Entity(opt)).toNumberArray();
+  let ent = new Entity.Entity(opt);
+  return ent.toVector();
 })
 
+let addFunctions = function(gpu: any, functions: any[]) {
+  functions.forEach(function(f) {
+    gpu.addFunction(f);
+  })
+}
+
 let gpu = new GPU();
-utilityFunctions.forEach(function(f) { gpu.addFunction(f); })
+addFunctions(gpu, vectorFunctions);
+addFunctions(gpu, utilityFunctions);
 
 // Global states
 let isRunning = true;
-let mode: Mode = Mode.GPU;
+let mode = Mode.GPU;
 
+var canvas = document.getElementById('canvas');
 let gpuKernel = createKernel(Mode.GPU, entities);
-let cpuKernel = createKernel(Mode.CPU, entities);
 
-let renderLoop = renderer(gpuKernel, cpuKernel, entities, camera, lights);
+let renderLoop = renderer(gpuKernel, entities, camera, lights);
 window.onload = renderLoop;
