@@ -1,89 +1,6 @@
-/// <reference path="../vendor/gpu.d.ts" />
+/// <reference path="references.ts" />
 
-enum EntityType { EMPTY, SPHERE, CUBOID, CYLINDER, CONE, TRIANGLE }
 enum Mode { GPU, CPU }
-
-interface EntityOpts {
-  entityType: EntityType,
-  x?: number,
-  y?: number,
-  z?: number,
-  width?: number,
-  height?: number,
-  depth?: number,
-  radius?: number,
-  red?: number,
-  green?: number,
-  blue?: number,
-  lambertianReflection: number, // Lambertian model reflection 0 to 1
-  opacity: number, // 0 to 1
-  specularReflection: number,  // 0 to 1
-  ambientColor: number // 0 to 1
-}
-
-class Entity {
-
-  entityType: EntityType        
-  x: number                     
-  y: number                     
-  z: number                     
-  width: number                 
-  height: number                
-  depth: number                 
-  radius: number                
-  red: number                   
-  green: number                 
-  blue: number                  
-  lambertianReflection: number  
-  opacity: number               
-  specularReflection: number    
-  ambientColor: number          
-
-  constructor(opts: EntityOpts) {
-    this.entityType = opts.entityType;
-    this.opacity = opts.opacity;
-    this.ambientColor = opts.ambientColor;
-    this.specularReflection = opts.specularReflection;
-    this.lambertianReflection = opts.lambertianReflection;
-
-    this.x = opts.x             || 0;
-    this.y = opts.y             || 0;
-    this.z = opts.z             || 0;
-    this.red = opts.red         || 0;
-    this.blue = opts.blue       || 0;
-    this.green = opts.green     || 0;
-    this.width = opts.width     || 0;
-    this.height = opts.height   || 0;
-    this.depth = opts.depth     || 0;
-    this.radius = opts.radius   || 0;
-  }
-
-  toNumberArray() : number[] {
-    let array = [
-      this.entityType,           // 0
-      this.x,                    // 1
-      this.y,                    // 2
-      this.z,                    // 3
-      this.width,                // 4
-      this.height,               // 5
-      this.depth,                // 6
-      this.radius,               // 7
-      this.red,                  // 8
-      this.green,                // 9
-      this.blue,                 // 10
-      this.lambertianReflection, // 11
-      this.opacity,              // 12
-      this.specularReflection,   // 13
-      this.ambientColor          // 14
-    ];
-
-    return array;
-  }
-
-  fromNumberArray(array: number[]) {
-  }
-
-}
 
 let toggleMode = function(el: HTMLInputElement) : void {
   switch (mode) {
@@ -129,12 +46,12 @@ let createKernel = function(mode: Mode, entities: number[][]) : any {
     safeTextureReadHack: false,
     constants: {
       OBJCOUNT: entities.length,
-      EMPTY: EntityType.EMPTY,
-      SPHERE: EntityType.SPHERE,
-      CUBOID: EntityType.CUBOID,
-      CYLINDER: EntityType.CYLINDER,
-      CONE: EntityType.CONE,
-      TRIANGLE: EntityType.TRIANGLE
+      EMPTY: Entity.Type.EMPTY,
+      SPHERE: Entity.Type.SPHERE,
+      CUBOID: Entity.Type.CUBOID,
+      CYLINDER: Entity.Type.CYLINDER,
+      CONE: Entity.Type.CONE,
+      TRIANGLE: Entity.Type.TRIANGLE
     },
     mode: stringOfMode(mode) // can be either cpu or gpu
   };
@@ -181,16 +98,17 @@ let renderer = function(gpuKernel: any, cpuKernel: any, entities: number[][],
     if (!isRunning) { return; } // Pause render loop if not running
 
     updateFPS(fps.getFPS());
-    let cv = document.getElementsByTagName("canvas")[0];
-    let bdy = cv.parentNode;
-    let newCanvas: Node;
 
     if (mode === Mode.CPU) {
       cpuKernel(camera, lights, entities);
-      newCanvas = cpuKernel.getCanvas();
+      var cv = document.getElementsByTagName("canvas")[0];
+      var bdy = cv.parentNode;
+      var newCanvas = cpuKernel.getCanvas();
     } else {
       gpuKernel(camera, lights, entities);
-      newCanvas = gpuKernel.getCanvas();
+      var cv = document.getElementsByTagName("canvas")[0];
+      var bdy = cv.parentNode;
+      var newCanvas = gpuKernel.getCanvas();
     }
 
     bdy.replaceChild(newCanvas, cv);
@@ -207,13 +125,7 @@ let renderer = function(gpuKernel: any, cpuKernel: any, entities: number[][],
   return nextTick;
 }
 
-function square(x: number) : number {
-  return x * x;
-}
-
-function dist(x1: number, y1: number, x2: number, y2: number) : number {
-  return Math.sqrt(square(x2 - x1) + square(y2 - y1));
-}
+// entity declarations
 
 // scene.js
 let camera: number[] = [
@@ -228,8 +140,8 @@ let lights: number[] = [
   100,100,100, 1,1,1,        // light 2, x,y,z location, and rgb colour (white)
 ];
 
-let sphere_1_opts: EntityOpts = {
-  entityType: EntityType.SPHERE,
+let sphere_1_opts: Entity.Opts = {
+  entityType: Entity.Type.SPHERE,
   red: 1.0,
   green: 0.7,
   blue: 0.7,
@@ -243,8 +155,8 @@ let sphere_1_opts: EntityOpts = {
   opacity: 1.0,
 }
 
-let sphere_2_opts: EntityOpts = {
-  entityType: EntityType.SPHERE,
+let sphere_2_opts: Entity.Opts = {
+  entityType: Entity.Type.SPHERE,
   red: 1.0,
   green: 0.7,
   blue: 0.2,
@@ -258,14 +170,13 @@ let sphere_2_opts: EntityOpts = {
   opacity: 1.0,
 }
 
-let opts: EntityOpts[] = [sphere_1_opts, sphere_2_opts];
+let opts: Entity.Opts[] = [sphere_1_opts, sphere_2_opts];
 let entities: number[][] = opts.map(function(opt) {
-  return (new Entity(opt)).toNumberArray();
+  return (new Entity.Entity(opt)).toNumberArray();
 })
 
 let gpu = new GPU();
-gpu.addFunction(square);
-gpu.addFunction(dist);
+utilityFunctions.forEach(function(f) { gpu.addFunction(f); })
 
 // Global states
 let isRunning = true;
