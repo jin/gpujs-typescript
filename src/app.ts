@@ -8,8 +8,11 @@ let togglePause = function(el: HTMLInputElement) : void {
   if (isRunning) { renderLoop() };
 }
 
-let renderer = function(gpuKernel: any, entities: number[][],
-                        camera: number[][], lights: number[][]) : () => void {
+let renderer = function(gpuKernel: any, scene: Scene.Scene) : () => void {
+
+  let camera = scene.camera;
+  let lights = scene.lights;
+  let entities = scene.entities;
 
   let fps = {
     startTime: 0,
@@ -52,7 +55,7 @@ let renderer = function(gpuKernel: any, entities: number[][],
   return nextTick;
 }
 
-let createKernel = function(mode: Mode, entities: number[][]) : any {
+let createKernel = function(mode: Mode, scene: Scene.Scene) : any {
 
   interface KernelOptions {
     dimensions?: number[],
@@ -77,7 +80,7 @@ let createKernel = function(mode: Mode, entities: number[][]) : any {
     graphical: true,
     safeTextureReadHack: false,
     constants: {
-      ENTITY_COUNT: entities.length,
+      ENTITY_COUNT: scene.entities.length,
       EMPTY: Entity.Type.EMPTY,
       SPHERE: Entity.Type.SPHERE,
       CUBOID: Entity.Type.CUBOID,
@@ -88,23 +91,13 @@ let createKernel = function(mode: Mode, entities: number[][]) : any {
   };
 
   let kernel = gpu.createKernel(function(camera: number[], lights: number[], entities: number[][]) {
-    this.color(0.95, 0.95, 0.95);                      // By default canvas is light grey
-    for (var i = 0; i < this.constants.ENTITY_COUNT; i++) {     // Look at all object records
-      if (entities[i][0] == this.constants.SPHERE) { // i.e. if it is a SPHERE...
-
+    this.color(0.95, 0.95, 0.95);                     
+    for (var i = 0; i < this.constants.ENTITY_COUNT; i++) {   
+      if (entities[i][0] == this.constants.SPHERE) { 
         if (dist(this.thread.x, this.thread.y, entities[i][1], entities[i][2]) < entities[i][7]) {
           this.color(entities[i][8],entities[i][9] + i, entities[i][10]);
         }
-
-      } if (entities[i][0] == this.constants.CYLINDER) {
-        if (dist(this.thread.x, 0, entities[i][1], 0) < entities[i][7] &&
-            this.thread.y - entities[i][2] < entities[i][5] &&
-              this.thread.y - entities[i][2] >= 0) {
-
-          this.color(entities[i][8],entities[i][9] + i, entities[i][10]);
-
-        }
-      }
+      } 
     }
   }, opt);
 
@@ -129,7 +122,8 @@ let isRunning = true;
 let mode = Mode.GPU;
 
 var canvas = document.getElementById('canvas');
-let gpuKernel = createKernel(Mode.GPU, Scene.entities);
+let scene = Scene.scene;
+let gpuKernel = createKernel(Mode.GPU, scene);
 
-let renderLoop = renderer(gpuKernel, Scene.entities, Scene.camera, Scene.lights);
+let renderLoop = renderer(gpuKernel, scene);
 window.onload = renderLoop;

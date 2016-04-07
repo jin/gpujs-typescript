@@ -2,13 +2,13 @@
 
 namespace Scene {
 
-  export let camera: number[][] = [
+  let camera: number[][] = [
     [300, 300, 0],                     // x,y,z coordinates
     [0, 0, 1],                     // Direction normal vector
     [45]                         // field of view : example 45
   ];
 
-  export let lights: number[][] = [
+  let lights: number[][] = [
     [200, 200, 200, 0, 1, 0]        // light 1, x,y,z location, and rgb colour (green
   ];
 
@@ -59,9 +59,21 @@ namespace Scene {
   }
 
   let opts: Entity.Opts[] = [sphere_1_opts, sphere_2_opts, cylinder_opts];
-  export let entities: number[][] = opts.map(function(opt) {
+  let entities: number[][] = opts.map(function(opt) {
     let ent = new Entity.Entity(opt);
     return ent.toVector();
   })
+
+  export interface Scene {
+    camera: number[][],
+    lights: number[][],
+    entities: number[][]
+  }
+
+  export let scene = {
+    camera: camera,
+    lights: lights,
+    entities: entities
+  }
 
 }
