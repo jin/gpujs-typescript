@@ -2,13 +2,16 @@
 
 namespace Scene {
 
-  let camera: number[][] = [
-    [300, 300, 0],                     // x,y,z coordinates
-    [0, 0, 1],                     // Direction normal vector
-    [45]                         // field of view : example 45
+  type Camera = number[];
+  type Light = number[];
+
+  let camera: Camera = [
+    300, 300, 0,  // x,y,z coordinates
+    0, 0, 1,      // Direction normal vector
+    45            // field of view : example 45
   ];
 
-  let lights: number[][] = [
+  let lights: Light[] = [
     [200, 200, 200, 0, 1, 0]        // light 1, x,y,z location, and rgb colour (green
   ];
 
@@ -59,15 +62,14 @@ namespace Scene {
   }
 
   let opts: Entity.Opts[] = [sphere_1_opts, sphere_2_opts, cylinder_opts];
-  let entities: number[][] = opts.map(function(opt) {
-    let ent = new Entity.Entity(opt);
-    return ent.toVector();
+  let entities: Entity.Entity[] = opts.map(function(opt) {
+    return new Entity.Entity(opt);
   })
 
   export interface Scene {
-    camera: number[][],
-    lights: number[][],
-    entities: number[][]
+    camera: Camera,
+    lights: Light[],
+    entities: Entity.Entity[]
   }
 
   export let scene = {

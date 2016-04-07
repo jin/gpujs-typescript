@@ -12,7 +12,7 @@ let renderer = function(gpuKernel: any, scene: Scene.Scene) : () => void {
 
   let camera = scene.camera;
   let lights = scene.lights;
-  let entities = scene.entities;
+  let entities = scene.entities.map(function(f) { return f.toVector(); });
 
   let fps = {
     startTime: 0,
