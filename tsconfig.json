@@ -2,12 +2,13 @@
   "compilerOptions": {
     "allowUnreachableCode": true,
     "allowUnusedLabels": true,
-    "noImplicitAny": true,
+    "noImplicitAny": false,
     "removeComments": true,
     "preserveConstEnums": true,
     "sourceMap": true,
     "allowJs": true,
     "watch": true,
+    "target": "es6",
     "out": "./lib/app.js"
   },
   "files": [

@@ -1,4 +1,5 @@
 /// <reference path="entity.ts" />
+/// <reference path="vector.ts" />
 
 namespace Scene {
 
@@ -6,9 +7,9 @@ namespace Scene {
   type Light = number[];
 
   let camera: Camera = [
-    300, 300, 0,  // x,y,z coordinates
-    0, 0, 1,      // Direction normal vector
-    45            // field of view : example 45
+    0, 300, 300,  // x,y,z coordinates idx 0, 1, 2
+    0, 0, 1,      // Direction normal vector idx 3, 4, 5
+    45            // field of view : example 45. idx 6
   ];
 
   let lights: Light[] = [
@@ -66,16 +67,59 @@ namespace Scene {
     return new Entity.Entity(opt);
   })
 
+  let eyeVector = vecNormalize(vecSubtract([camera[3], camera[4], camera[5]], [camera[0], camera[1], camera[2]]));
+
+  let vpRight = vecNormalize(vecCrossProduct(eyeVector, upVector));
+  let vpUp = vecNormalize(vecCrossProduct(vpRight, eyeVector));
+
+  let canvasHeight = 600;
+  let canvasWidth = 600;
+
+  let fovRadians = Math.PI * (camera[7] / 2) / 180;
+  let heightWidthRatio = canvasHeight / canvasWidth;
+  let halfWidth = Math.tan(fovRadians);
+  let halfHeight = heightWidthRatio * halfWidth;
+  let cameraWidth = halfWidth * 2;
+  let cameraHeight = halfHeight * 2;
+  let pixelWidth = cameraWidth / (canvasWidth - 1);
+  let pixelHeight = cameraHeight / (canvasHeight - 1);
+
   export interface Scene {
-    camera: Camera,
-    lights: Light[],
-    entities: Entity.Entity[]
+    camera: number[],
+    lights: number[][],
+    entities: Entity.Entity[],
+    eyeVector: number[],
+    vpRight: number[],
+    vpUp: number[],
+    canvasHeight: number,
+    canvasWidth: number,
+    fovRadians: number,
+    heightWidthRatio: number,
+    halfWidth: number,
+    halfHeight: number,
+    cameraWidth: number,
+    cameraHeight: number,
+    pixelWidth: number,
+    pixelHeight: number 
   }
 
   export let scene = {
     camera: camera,
     lights: lights,
-    entities: entities
+    entities: entities,
+    eyeVector: eyeVector,
+    vpRight: vpRight,
+    vpUp: vpUp,
+    canvasHeight: canvasHeight,
+    canvasWidth: canvasWidth,
+    fovRadians: fovRadians,
+    heightWidthRatio: heightWidthRatio,
+    halfWidth: halfWidth,
+    halfHeight: halfHeight,
+    cameraWidth: cameraWidth,
+    cameraHeight: cameraHeight,
+    pixelWidth: pixelWidth,
+    pixelHeight: pixelHeight
   }
 
 }

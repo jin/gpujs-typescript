@@ -2530,7 +2530,11 @@ var GPU = (function() {
 	/// 	{Canvas object} that the instance use
 	///
 	function getCanvas(mode) {
-		return this.canvas;
+    if (mode === "cpu") {
+			this.canvas = GPUUtils.init_canvas();
+      this.canvas.getContext("2d");
+    } 
+    return this.canvas;
 	};
 	GPU.prototype.getCanvas = getCanvas;
 	
