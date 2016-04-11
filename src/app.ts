@@ -114,11 +114,53 @@ var renderer = (gpuKernel: any, cpuKernel: any,
       bdy.replaceChild(newCanvas, cv);
     }
 
+    entities.forEach(function(entity, idx) {
+      entities[idx] = moveEntity(canvasWidth, canvasWidth, canvasWidth, entity);
+    })
+
     // entities[0][1] = (entities[0][1] + 1) % 900;
     // entities[0][1] = (entities[0][2] + 1) % 900;
     // entities[1][2] = (entities[1][2] + 2) % 700;
     // setTimeout(renderLoop, 1);            // Uncomment this line, and comment the next line
     requestAnimationFrame(nextTick);     // to see how fast this could run...
+  }
+
+  let moveEntity = (width, height, depth, entity) => {
+    let reflect = (entity, normal) => {
+      let incidentVec = [entity[15], entity[16], entity[17]];
+      let dp = vecDotProduct(incidentVec, normal);
+      let tmp = vecSubtract(incidentVec, vecScale(normal, 2 * dp));
+      return tmp;
+    }
+    // console.log(width, height, depth)
+    // console.log(entity[1], entity[2], entity[3])
+    entity[1] += entity[15];
+    entity[2] += entity[16];
+    entity[3] += entity[17];
+    let needsReflect = false;
+    var normal;
+    if (entity[1] < -4) {
+      normal = [1, 0, 0], needsReflect = true;
+    } 
+    if (entity[1] > 4) {
+      normal = [-1, 0, 0], needsReflect = true;
+    }
+    if (entity[2] < 0) {
+      normal = [0, 1, 0], needsReflect = true;
+    }
+    if (entity[2] > 7) {
+      normal = [0, -1, 0], needsReflect = true;
+    }
+    if (entity[3] < -7) {
+      normal = [0, 0, 1], needsReflect = true;
+    }
+    if (entity[3] > 0) {
+      normal = [0, 0, -1], needsReflect = true;
+    }
+    if (needsReflect) {
+      [entity[15], entity[16], entity[17]] = reflect(entity, normal);
+    }
+    return entity;
   }
 
   return nextTick;

@@ -24,11 +24,14 @@ namespace Scene {
     x: 0,
     y: 3.5,
     z: -3,
-    radius: 3,
+    radius: 0.5,
     specularReflection: 0.2,
     lambertianReflection: 0.7,
     ambientColor: 0.1,
-    opacity: 1.0
+    opacity: 1.0,
+    directionX: 0.05,
+    directionY: 0.05,
+    directionZ: -0.05
   }
 
   let sphere_2_opts: Entity.Opts = {
@@ -39,11 +42,14 @@ namespace Scene {
     x: -4,
     y: 3,
     z: -1,
-    radius: 0.2,
+    radius: 0.7,
     specularReflection: 0.2,
     lambertianReflection: 0.7,
     ambientColor: 0.1,
     opacity: 1.0,
+    directionX: 0.07,
+    directionY: 0.10,
+    directionZ: 0.11
   }
 
   let cylinder_opts: Entity.Opts = {
@@ -59,7 +65,10 @@ namespace Scene {
     specularReflection: 0.2,
     lambertianReflection: 0.7,
     ambientColor: 0.5,
-    opacity: 1.0
+    opacity: 1.0,
+    directionX: 0,
+    directionY: 0,
+    directionZ: 0
   }
 
   let opts: Entity.Opts[] = [sphere_1_opts, sphere_2_opts];
@@ -75,9 +84,9 @@ namespace Scene {
   let canvasHeight = 600;
   let canvasWidth = 600;
 
-  let fovRadians = Math.PI * (camera[6] / 2) / 180;
+  let fieldOfViewRadians = Math.PI * (camera[6] / 2) / 180;
   let heightWidthRatio = canvasHeight / canvasWidth;
-  let halfWidth = Math.tan(fovRadians);
+  let halfWidth = Math.tan(fieldOfViewRadians);
   let halfHeight = heightWidthRatio * halfWidth;
   let cameraWidth = halfWidth * 2;
   let cameraHeight = halfHeight * 2;
@@ -112,7 +121,7 @@ namespace Scene {
     vpUp: vpUp,
     canvasHeight: canvasHeight,
     canvasWidth: canvasWidth,
-    fovRadians: fovRadians,
+    fovRadians: fieldOfViewRadians,
     heightWidthRatio: heightWidthRatio,
     halfWidth: halfWidth,
     halfHeight: halfHeight,
