@@ -7,7 +7,7 @@ namespace Scene {
   type Light = number[];
 
   let camera: Camera = [
-    0, 1.8, 10,  // x,y,z coordinates idx 0, 1, 2
+    0, 0, 10,  // x,y,z coordinates idx 0, 1, 2
     0, 3, 0,      // Direction normal vector idx 3, 4, 5
     45            // Field of view. idx 6
   ];

@@ -142,7 +142,7 @@ var renderer = (gpuKernel: any, cpuKernel: any,
     if (entity[1] < -4) {
       normal = [1, 0, 0], needsReflect = true;
     } 
-    if (entity[1] > 4) {
+    if (entity[1] > 4.2) {
       normal = [-1, 0, 0], needsReflect = true;
     }
     if (entity[2] < 0) {
@@ -154,7 +154,7 @@ var renderer = (gpuKernel: any, cpuKernel: any,
     if (entity[3] < -7) {
       normal = [0, 0, 1], needsReflect = true;
     }
-    if (entity[3] > 0) {
+    if (entity[3] > 2) {
       normal = [0, 0, -1], needsReflect = true;
     }
     if (needsReflect) {
