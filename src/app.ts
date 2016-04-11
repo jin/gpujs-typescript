@@ -121,7 +121,7 @@ var renderer = (gpuKernel: any, cpuKernel: any,
     // entities[0][1] = (entities[0][1] + 1) % 900;
     // entities[0][1] = (entities[0][2] + 1) % 900;
     // entities[1][2] = (entities[1][2] + 2) % 700;
-    // setTimeout(renderLoop, 1);            // Uncomment this line, and comment the next line
+     // setTimeout(renderLoop, 1000 / 70);            // Uncomment this line, and comment the next line
     requestAnimationFrame(nextTick);     // to see how fast this could run...
   }
 
@@ -192,6 +192,7 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
     safeTextureReadHack: false,
     constants: {
       ENTITY_COUNT: scene.entities.length,
+      LIGHT_COUNT: scene.lights.length,
       EMPTY: Entity.Type.EMPTY,
       SPHERE: Entity.Type.SPHERE,
       CUBOID: Entity.Type.CUBOID,
@@ -269,9 +270,10 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
     var normRayVecY = normalizeY(rayVecX, rayVecY, rayVecZ);
     var normRayVecZ = normalizeZ(rayVecX, rayVecY, rayVecZ);
 
-    var colorX = 0.95;
-    var colorY = 0.95;
-    var colorZ = 0.95;
+    // default background color
+    var red = 0.95;
+    var green = 0.95;
+    var blue = 0.95;
 
     // raytracer end
 
@@ -279,12 +281,9 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
     var maxEntityDistance = 2 ** 64;
     var nearestEntityDistance = 2 ** 64;
 
-    this.color(colorX, colorY, colorZ); // default background color
-
     // Get nearest object
     for (var i = 0; i < this.constants.ENTITY_COUNT; i++) {
       if (entities[i][0] == this.constants.SPHERE) {
-
         var distance = sphereIntersection(
           entities[i][1], entities[i][2], entities[i][3],
           entities[i][7],
@@ -293,19 +292,87 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
         );
 
         if (distance >= 0 && distance < nearestEntityDistance) {
-          nearestEntityDistance = distance;
           nearestEntityIndex = i;
+          nearestEntityDistance = distance;
+          red = entities[i][8];
+          green = entities[i][9];
+          blue = entities[i][10];
         } 
-
-        // moving sphere code
-        // if (dist(this.thread.x, this.thread.y, entities[i][1], entities[i][2]) < entities[i][7]) {
-        //   this.color((entities[i][8] + y) / 600, (entities[i][9] + x) / 600, entities[i][10]);
       }
     }
 
-    if (nearestEntityIndex > -1) {
-      this.color(entities[nearestEntityIndex][8], entities[nearestEntityIndex][9], entities[nearestEntityIndex][10]);
+
+    var depth = 0;
+    if (nearestEntityIndex >= 0) {
+      while (depth < 1) {
+        var entityPtX = entities[nearestEntityIndex][1];
+        var entityPtY = entities[nearestEntityIndex][2];
+        var entityPtZ = entities[nearestEntityIndex][3];
+
+        var entityRed = entities[nearestEntityIndex][8];
+        var entityGreen = entities[nearestEntityIndex][9];
+        var entityBlue = entities[nearestEntityIndex][10];
+
+        var intersectPtX = rayPtX + normRayVecX * nearestEntityDistance;
+        var intersectPtY = rayPtY + normRayVecY * nearestEntityDistance;
+        var intersectPtZ = rayPtZ + normRayVecZ * nearestEntityDistance;
+
+        var sphereNormPtX = sphereNormalX(entityPtX, entityPtY, entityPtZ, intersectPtX, intersectPtY, intersectPtZ);
+        var sphereNormPtY = sphereNormalY(entityPtX, entityPtY, entityPtZ, intersectPtX, intersectPtY, intersectPtZ);
+        var sphereNormPtZ = sphereNormalZ(entityPtX, entityPtY, entityPtZ, intersectPtX, intersectPtY, intersectPtZ);
+
+        // Lambertian reflection
+        
+        for (var i = 0; i < this.constants.LIGHT_COUNT; i++) {
+          var lightPtX = lights[i][0];
+          var lightPtY = lights[i][1];
+          var lightPtZ = lights[i][2];
+
+
+          var vecToLightX = sphereNormalX(intersectPtX, intersectPtY, intersectPtZ, lightPtX, lightPtY, lightPtZ);
+          var vecToLightY = sphereNormalY(intersectPtX, intersectPtY, intersectPtZ, lightPtX, lightPtY, lightPtZ);
+          var vecToLightZ = sphereNormalZ(intersectPtX, intersectPtY, intersectPtZ, lightPtX, lightPtY, lightPtZ);
+
+          var shadowCast = -1;
+
+          var lambertAmount = 0;
+
+          var entityLambert = entities[nearestEntityIndex][11];
+
+          for (var j = 0; j < this.constants.ENTITY_COUNT; j++) {
+            if (entities[j][0] == this.constants.SPHERE) {
+              var distance = sphereIntersection(
+                entities[j][1], entities[j][2], entities[j][3],
+                entities[j][7],
+                intersectPtX, intersectPtY, intersectPtZ,
+                vecToLightX, vecToLightY, vecToLightZ 
+              );
+
+              if (distance > -0.005) { shadowCast = 1; } 
+            }
+          }
+
+          if (shadowCast > 0) {
+            var contribution = dotProduct(
+              -vecToLightX, -vecToLightY, -vecToLightZ,
+              sphereNormPtX, sphereNormPtY, sphereNormPtZ
+            );
+            if (contribution > 0) {
+              lambertAmount += contribution;
+            }
+          }
+
+          lambertAmount = Math.min(1, lambertAmount);
+          red = entityRed * lambertAmount * entityLambert;
+          green = entityGreen * lambertAmount * entityLambert;
+          blue = entityBlue * lambertAmount * entityLambert;
+        }
+
+        depth += 1;
+      }
     }
+
+    this.color(red, green, blue); // default background color
 
   }, opt);
 }

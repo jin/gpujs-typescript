@@ -151,6 +151,30 @@ function sphereIntersection(spherePtX, spherePtY, spherePtZ, sphereRadius, rayPt
   }
 }
 
+function sphereNormalX(spherePtX, spherePtY, spherePtZ, surfacePtX, surfacePtY, surfacePtZ) {
+  var x = surfacePtX - spherePtX,
+    y = surfacePtY - spherePtY,
+    z = surfacePtZ - spherePtZ;
+  var mag = Math.sqrt(x * x + y * y + z * z);
+  return x * (1 / mag);
+}
+
+function sphereNormalY(spherePtX, spherePtY, spherePtZ, surfacePtX, surfacePtY, surfacePtZ) {
+  var x = surfacePtX - spherePtX,
+    y = surfacePtY - spherePtY,
+    z = surfacePtZ - spherePtZ;
+  var mag = Math.sqrt(x * x + y * y + z * z);
+  return y * (1 / mag);
+}
+
+function sphereNormalZ(spherePtX, spherePtY, spherePtZ, surfacePtX, surfacePtY, surfacePtZ) {
+  var x = surfacePtX - spherePtX,
+    y = surfacePtY - spherePtY,
+    z = surfacePtZ - spherePtZ;
+  var mag = Math.sqrt(x * x + y * y + z * z);
+  return z * (1 / mag);
+}
+
 // let x = 300, y = 300;
 // console.log(sphereIntersection(testSphere.x, testSphere.y, testSphere.z, testSphere.radius, testRay.point.x, testRay.point.y, testRay.point.z, testRay.getVector(x, y)[0], testRay.getVector(x, y)[1], testRay.getVector(x, y)[2]));
 
@@ -192,5 +216,6 @@ let vectorFunctions = [
   crossProductX, crossProductY, crossProductZ,
   scaleX, scaleY, scaleZ,
   dotProduct,
-  sphereIntersection
+  sphereIntersection,
+  sphereNormalX, sphereNormalY, sphereNormalZ
 ];

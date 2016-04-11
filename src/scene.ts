@@ -13,7 +13,8 @@ namespace Scene {
   ];
 
   let lights: Light[] = [
-    [200, 200, 200, 0, 1, 0]        // light 1, x,y,z location, and rgb colour (green
+    [-800, 1000, -500, 0, 1, 0],        // light 1, x,y,z location, and rgb colour (green
+    [800, 1000, -500, 0, 1, 0]        // light 1, x,y,z location, and rgb colour (green
   ];
 
   let sphere_1_opts: Entity.Opts = {
@@ -26,7 +27,7 @@ namespace Scene {
     z: -3,
     radius: 0.5,
     specularReflection: 0.2,
-    lambertianReflection: 0.7,
+    lambertianReflection: 1,
     ambientColor: 0.1,
     opacity: 1.0,
     directionX: 0.05,
@@ -48,7 +49,7 @@ namespace Scene {
     ambientColor: 0.1,
     opacity: 1.0,
     directionX: 0.07,
-    directionY: 0.10,
+    directionY: 0.02,
     directionZ: 0.11
   }
 
