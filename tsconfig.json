@@ -1,16 +1,18 @@
 {
-    "compilerOptions": {
-        "module": "commonjs",
-        "noImplicitAny": false,
-        "removeComments": true,
-        "preserveConstEnums": true,
-        "sourceMap": true,
-        "allowJs": true,
-        "watch": true,
-        "out": "./lib/app.js"
-    },
-    "files": [
-        "vendor/gpu.js",
-        "src/app.ts"
-    ]
+  "compilerOptions": {
+    "allowUnreachableCode": true,
+    "allowUnusedLabels": true,
+    "noImplicitAny": false,
+    "removeComments": true,
+    "preserveConstEnums": true,
+    "sourceMap": true,
+    "allowJs": true,
+    "watch": true,
+    "target": "es6",
+    "out": "./lib/app.js"
+  },
+  "files": [
+    "vendor/gpu.js",
+    "src/app.ts"
+  ]
 }

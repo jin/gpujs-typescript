@@ -1,164 +1,49 @@
-/// <reference path="../vendor/gpu.d.ts" />
+/// <reference path="references.ts" />
 
-enum EntityType { EMPTY, SPHERE, CUBOID, CYLINDER, CONE, TRIANGLE }
 enum Mode { GPU, CPU }
 
-interface EntityOpts {
-  entityType: EntityType,
-  x?: number,
-  y?: number,
-  z?: number,
-  width?: number,
-  height?: number,
-  depth?: number,
-  radius?: number,
-  red?: number,
-  green?: number,
-  blue?: number,
-  lambertianReflection: number, // Lambertian model reflection 0 to 1
-  opacity: number, // 0 to 1
-  specularReflection: number,  // 0 to 1
-  ambientColor: number // 0 to 1
-}
+// Global states
+var isRunning = true;
+var mode = Mode.GPU;
 
-class Entity {
-
-  entityType: EntityType        
-  x: number                     
-  y: number                     
-  z: number                     
-  width: number                 
-  height: number                
-  depth: number                 
-  radius: number                
-  red: number                   
-  green: number                 
-  blue: number                  
-  lambertianReflection: number  
-  opacity: number               
-  specularReflection: number    
-  ambientColor: number          
-
-  constructor(opts: EntityOpts) {
-    this.entityType = opts.entityType;
-    this.opacity = opts.opacity;
-    this.ambientColor = opts.ambientColor;
-    this.specularReflection = opts.specularReflection;
-    this.lambertianReflection = opts.lambertianReflection;
-
-    this.x = opts.x             || 0;
-    this.y = opts.y             || 0;
-    this.z = opts.z             || 0;
-    this.red = opts.red         || 0;
-    this.blue = opts.blue       || 0;
-    this.green = opts.green     || 0;
-    this.width = opts.width     || 0;
-    this.height = opts.height   || 0;
-    this.depth = opts.depth     || 0;
-    this.radius = opts.radius   || 0;
-  }
-
-  toNumberArray() : number[] {
-    let array = [
-      this.entityType,           // 0
-      this.x,                    // 1
-      this.y,                    // 2
-      this.z,                    // 3
-      this.width,                // 4
-      this.height,               // 5
-      this.depth,                // 6
-      this.radius,               // 7
-      this.red,                  // 8
-      this.green,                // 9
-      this.blue,                 // 10
-      this.lambertianReflection, // 11
-      this.opacity,              // 12
-      this.specularReflection,   // 13
-      this.ambientColor          // 14
-    ];
-
-    return array;
-  }
-
-  fromNumberArray(array: number[]) {
-  }
-
-}
-
-let toggleMode = function(el: HTMLInputElement) : void {
-  switch (mode) {
-    case Mode.CPU:
-      mode = Mode.GPU;
-      el.value = "Using GPU";
-      break;
-    case Mode.GPU:
-      mode = Mode.CPU;
-      el.value = "Using CPU";
-      break;
-  }
-}
-
-let togglePause = function(el: HTMLInputElement) : void {
+let togglePause = (el: HTMLInputElement) : void => {
   el.value = isRunning ? "Start" : "Pause";
   isRunning = !isRunning;
+  renderLoop = renderer(gpuKernel, cpuKernel, gpuCanvas, cpuCanvas, scene);
   if (isRunning) { renderLoop() };
 }
 
-let createKernel = function(mode: Mode, entities: number[][]) : any {
-
-  interface KernelOptions {
-    dimensions?: number[],
-    debug?: boolean,
-    graphical?: boolean,
-    safeTextureReadHack?: boolean,
-    mode?: string,
-    constants?: {}
-  }
-
-  let stringOfMode = function(mode: Mode) : string {
-    switch(mode) {
-      case Mode.CPU: return "cpu";
-      case Mode.GPU: return "gpu";
-    }
-  }
-
-  const opt: KernelOptions = {
-    dimensions: [800, 600],
-    debug: false,
-    graphical: true,
-    safeTextureReadHack: false,
-    constants: {
-      OBJCOUNT: entities.length,
-      EMPTY: EntityType.EMPTY,
-      SPHERE: EntityType.SPHERE,
-      CUBOID: EntityType.CUBOID,
-      CYLINDER: EntityType.CYLINDER,
-      CONE: EntityType.CONE,
-      TRIANGLE: EntityType.TRIANGLE
-    },
-    mode: stringOfMode(mode) // can be either cpu or gpu
-  };
-
-  let kernel = gpu.createKernel(function(Camera: number[], Lights: number[], Entities: number[][]) {
-    this.color(0.95, 0.95, 0.95);                      // By default canvas is light grey
-    for (var i = 0; i < this.constants.OBJCOUNT; i++) {     // Look at all object records
-      if (Entities[i][0] == this.constants.SPHERE) { // i.e. if it is a SPHERE...
-        if (dist(this.thread.x, this.thread.y, Entities[i][1], Entities[i][2]) < Entities[i][7]) {
-          this.color(Entities[i][8], Entities[i][9], Entities[i][10]);
-        }
-      }
-    }
-  }, opt);
-
-  return kernel;
+let toggleMode = (el: HTMLInputElement) : void => {
+  el.value = (mode == Mode.CPU) ? "CPU" : "GPU";
+  mode = (mode == Mode.CPU) ? Mode.GPU : Mode.CPU;
+  if (isRunning) { renderLoop() };
 }
 
-let renderer = function(gpuKernel, cpuKernel, entities, camera, lights) : () => void {
+var renderer = (gpuKernel: any, cpuKernel: any, 
+                gpuCanvas: any, cpuCanvas: any, scene: Scene.Scene) : () => void => {
 
-  let fps = {
+
+  let camera = scene.camera,
+    lights = scene.lights,
+    entities = scene.entities.map(f => f.toVector()),
+    eyeVector = scene.eyeVector,
+    vpRight = scene.vpRight,
+    vpUp = scene.vpUp,
+    canvasHeight = scene.canvasHeight,
+    canvasWidth = scene.canvasWidth,
+    fovRadians = scene.fovRadians,
+    heightWidthRatio = scene.heightWidthRatio,
+    halfWidth = scene.halfWidth,
+    halfHeight = scene.halfHeight,
+    cameraWidth = scene.cameraWidth,
+    cameraHeight = scene.cameraHeight,
+    pixelWidth = scene.pixelWidth,
+    pixelHeight = scene.pixelHeight;
+
+  var fps = {
     startTime: 0,
     frameNumber: 0,
-    getFPS: function() {
+    getFPS: function(){
       this.frameNumber++;
       var d = new Date().getTime()
       var currentTime = (d - this.startTime) / 1000
@@ -171,107 +56,275 @@ let renderer = function(gpuKernel, cpuKernel, entities, camera, lights) : () => 
     }
   };
 
-  let updateFPS = function(fps: any) : void {
+  let updateFPS = (fps: any) : void => {
     var f = document.querySelector("#fps");
     f.innerHTML = fps.toString();
   }
 
-  let nextTick = function() : void {
+  let nextTick = () : void => {
     if (!isRunning) { return; } // Pause render loop if not running
 
     updateFPS(fps.getFPS());
-    let cv = document.getElementsByTagName("canvas")[0];
-    let bdy = cv.parentNode;
-    let newCanvas;
 
-    if (mode === Mode.CPU) {
-      cpuKernel(camera, lights, entities);
-      newCanvas = cpuKernel.getCanvas();
+    if (mode == Mode.CPU) {
+      cpuKernel(
+        camera,
+        lights,
+        entities,
+        eyeVector,
+        vpRight,
+        vpUp,
+        canvasHeight,
+        canvasWidth,
+        fovRadians,
+        heightWidthRatio,
+        halfWidth,
+        halfHeight,
+        cameraWidth,
+        cameraHeight,
+        pixelWidth,
+        pixelHeight
+      );
+      var cv = document.getElementsByTagName("canvas")[0];
+      let bdy = cv.parentNode;
+      let newCanvas = gpuKernel.getCanvas();
+      bdy.replaceChild(newCanvas, cv);
     } else {
-      gpuKernel(camera, lights, entities);
-      newCanvas = gpuKernel.getCanvas();
+      gpuKernel(
+        camera,
+        lights,
+        entities,
+        eyeVector,
+        vpRight,
+        vpUp,
+        canvasHeight,
+        canvasWidth,
+        fovRadians,
+        heightWidthRatio,
+        halfWidth,
+        halfHeight,
+        cameraWidth,
+        cameraHeight,
+        pixelWidth,
+        pixelHeight
+      );
+      var cv = document.getElementsByTagName("canvas")[0];
+      let bdy = cv.parentNode;
+      let newCanvas = gpuKernel.getCanvas();
+      bdy.replaceChild(newCanvas, cv);
     }
 
-    bdy.replaceChild(newCanvas, cv);
+    entities.forEach(function(entity, idx) {
+      entities[idx] = moveEntity(canvasWidth, canvasWidth, canvasWidth, entity);
+    })
 
-    entities[0][1] = (entities[0][1] + 2) % 900;
-    entities[1][2] = (entities[1][2] + 2) % 700;
-    setTimeout(renderLoop,1);            // Uncomment this line, and comment the next line
-    // requestAnimationFrame(nextTick);     // to see how fast this could run...
+    // entities[0][1] = (entities[0][1] + 1) % 900;
+    // entities[0][1] = (entities[0][2] + 1) % 900;
+    // entities[1][2] = (entities[1][2] + 2) % 700;
+    // setTimeout(renderLoop, 1);            // Uncomment this line, and comment the next line
+    requestAnimationFrame(nextTick);     // to see how fast this could run...
   }
 
-  const canvas = gpuKernel.getCanvas();
-  document.getElementsByTagName('body')[0].appendChild(canvas);
+  let moveEntity = (width, height, depth, entity) => {
+    let reflect = (entity, normal) => {
+      let incidentVec = [entity[15], entity[16], entity[17]];
+      let dp = vecDotProduct(incidentVec, normal);
+      let tmp = vecSubtract(incidentVec, vecScale(normal, 2 * dp));
+      return tmp;
+    }
+    // console.log(width, height, depth)
+    // console.log(entity[1], entity[2], entity[3])
+    entity[1] += entity[15];
+    entity[2] += entity[16];
+    entity[3] += entity[17];
+    let needsReflect = false;
+    var normal;
+    if (entity[1] < -4) {
+      normal = [1, 0, 0], needsReflect = true;
+    } 
+    if (entity[1] > 4) {
+      normal = [-1, 0, 0], needsReflect = true;
+    }
+    if (entity[2] < 0) {
+      normal = [0, 1, 0], needsReflect = true;
+    }
+    if (entity[2] > 7) {
+      normal = [0, -1, 0], needsReflect = true;
+    }
+    if (entity[3] < -7) {
+      normal = [0, 0, 1], needsReflect = true;
+    }
+    if (entity[3] > 0) {
+      normal = [0, 0, -1], needsReflect = true;
+    }
+    if (needsReflect) {
+      [entity[15], entity[16], entity[17]] = reflect(entity, normal);
+    }
+    return entity;
+  }
 
   return nextTick;
 }
 
-function square(x: number) : number {
-  return x * x;
+var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
+
+  interface KernelOptions {
+    dimensions?: number[],
+    debug?: boolean,
+    graphical?: boolean,
+    safeTextureReadHack?: boolean,
+    mode?: string,
+    constants?: {}
+  }
+
+  let stringOfMode = (mode: Mode) : string => {
+    switch(mode) {
+      case Mode.CPU: return "cpu";
+      case Mode.GPU: return "gpu";
+    }
+  }
+
+  const opt: KernelOptions = {
+    mode: stringOfMode(mode),
+    dimensions: [600, 600],
+    debug: true,
+    graphical: true,
+    safeTextureReadHack: false,
+    constants: {
+      ENTITY_COUNT: scene.entities.length,
+      EMPTY: Entity.Type.EMPTY,
+      SPHERE: Entity.Type.SPHERE,
+      CUBOID: Entity.Type.CUBOID,
+      CYLINDER: Entity.Type.CYLINDER,
+      CONE: Entity.Type.CONE,
+      TRIANGLE: Entity.Type.TRIANGLE
+    }
+  };
+
+  return gpu.createKernel(function(
+    camera: number[], 
+    lights: number[], 
+    entities: number[][], 
+    eyeVector: number[],
+    vpRight: number[],
+    vpUp: number[],
+    canvasHeight: number,
+    canvasWidth: number,
+    fovRadians: number,
+    heightWidthRatio: number,
+    halfWidth: number,
+    halfHeight: number,
+    cameraWidth: number,
+    cameraHeight: number,
+    pixelWidth: number,
+    pixelHeight: number) {
+
+    // Kernel canary code
+    var x1 = addX(1, 2, 3, 4, 5, 6);
+    var x2 = addY(1, 2, 3, 4, 5, 6);
+    var x3 = addZ(1, 2, 3, 4, 5, 6);
+    var x4 = subtractX(1, 2, 3, 4, 5, 6);
+    var x5 = subtractY(1, 2, 3, 4, 5, 6);
+    var x6 = subtractZ(1, 2, 3, 4, 5, 6);
+    var x7 = normalizeX(1, 2, 3);
+    var x8 = normalizeY(1, 2, 3);
+    var x9 = normalizeZ(1, 2, 3);
+    var x10 = dotProduct(1, 2, 3, 4, 5, 6);
+    var x11 = crossProductX(1, 2, 3, 4, 5, 6);
+    var x12 = crossProductY(1, 2, 3, 4, 5, 6);
+    var x13 = crossProductZ(1, 2, 3, 4, 5, 6);
+    var x14 = magnitude(1, 2, 3);
+    var x15 = scaleX(1, 2, 3, 4);
+    var x16 = scaleY(1, 2, 3, 4);
+    var x17 = scaleZ(1, 2, 3, 4);
+    var x18 = add3X(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    var x19 = add3Y(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    var x20 = add3Z(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    var x21 = sphereIntersection(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+
+    // Start by creating a simple vector pointing in the direction the camera is
+    
+    // raytracer start
+    
+    var x = this.thread.x;
+    var y = this.thread.y;
+
+    var xCompX = vpRight[0] * (x * pixelWidth - halfWidth);
+    var xCompY = vpRight[1] * (x * pixelWidth - halfWidth);
+    var xCompZ = vpRight[2] * (x * pixelWidth - halfWidth);
+
+    var yCompX = vpUp[0] * (y * pixelHeight - halfHeight);
+    var yCompY = vpUp[1] * (y * pixelHeight - halfHeight);
+    var yCompZ = vpUp[2] * (y * pixelHeight - halfHeight);
+
+    var rayPtX = camera[0];
+    var rayPtY = camera[1];
+    var rayPtZ = camera[2];
+
+    var rayVecX = eyeVector[0] + xCompX + yCompX;
+    var rayVecY = eyeVector[1] + xCompY + yCompY;
+    var rayVecZ = eyeVector[2] + xCompZ + yCompZ;
+
+    var normRayVecX = normalizeX(rayVecX, rayVecY, rayVecZ);
+    var normRayVecY = normalizeY(rayVecX, rayVecY, rayVecZ);
+    var normRayVecZ = normalizeZ(rayVecX, rayVecY, rayVecZ);
+
+    var colorX = 0.95;
+    var colorY = 0.95;
+    var colorZ = 0.95;
+
+    // raytracer end
+
+    var nearestEntityIndex = -1;
+    var maxEntityDistance = 2 ** 64;
+    var nearestEntityDistance = 2 ** 64;
+
+    this.color(colorX, colorY, colorZ); // default background color
+
+    // Get nearest object
+    for (var i = 0; i < this.constants.ENTITY_COUNT; i++) {
+      if (entities[i][0] == this.constants.SPHERE) {
+
+        var distance = sphereIntersection(
+          entities[i][1], entities[i][2], entities[i][3],
+          entities[i][7],
+          rayPtX, rayPtY, rayPtZ,
+          normRayVecX, normRayVecY, normRayVecZ
+        );
+
+        if (distance >= 0 && distance < nearestEntityDistance) {
+          nearestEntityDistance = distance;
+          nearestEntityIndex = i;
+        } 
+
+        // moving sphere code
+        // if (dist(this.thread.x, this.thread.y, entities[i][1], entities[i][2]) < entities[i][7]) {
+        //   this.color((entities[i][8] + y) / 600, (entities[i][9] + x) / 600, entities[i][10]);
+      }
+    }
+
+    if (nearestEntityIndex > -1) {
+      this.color(entities[nearestEntityIndex][8], entities[nearestEntityIndex][9], entities[nearestEntityIndex][10]);
+    }
+
+  }, opt);
 }
 
-function dist(x1: number, y1: number, x2: number, y2: number) : number {
-  return Math.sqrt(square(x2 - x1) + square(y2 - y1));
-}
+let addFunctions = (gpu: any, functions: any[]) => functions.forEach(f => gpu.addFunction(f));
 
-// scene.js
-let camera: number[] = [
-  0,1,2,                     // x,y,z coordinates
-  4,4,4,                     // Direction normal vector
-  45                         // field of view : example 45
-];
+var gpu = new GPU();
+addFunctions(gpu, vectorFunctions);
+addFunctions(gpu, utilityFunctions);
 
-let lights: number[] = [
-  2,                         // number of lights
-  200,200,200, 0,1,0,        // light 1, x,y,z location, and rgb colour (green)
-  100,100,100, 1,1,1,        // light 2, x,y,z location, and rgb colour (white)
-];
+let scene = Scene.scene;
+var gpuKernel = createKernel(Mode.GPU, scene);
+var cpuKernel = createKernel(Mode.CPU, scene);
 
-let sphere_1_opts: EntityOpts = {
-  entityType: EntityType.SPHERE,
-  red: 1.0,
-  green: 0.7,
-  blue: 0.7,
-  x: 100,
-  y: 500,
-  z: 500,
-  radius: 40,
-  specularReflection: 0.2,
-  lambertianReflection: 0.7,
-  ambientColor: 0.1,
-  opacity: 1.0,
-}
+var cpuCanvas = cpuKernel.getCanvas();
+var gpuCanvas = gpuKernel.getCanvas();
 
-let sphere_2_opts: EntityOpts = {
-  entityType: EntityType.SPHERE,
-  red: 1.0,
-  green: 0.7,
-  blue: 0.2,
-  x: 200,
-  y: 600,
-  z: 200,
-  radius: 20,
-  specularReflection: 0.2,
-  lambertianReflection: 0.7,
-  ambientColor: 0.1,
-  opacity: 1.0,
-}
+document.getElementsByTagName('body')[0].appendChild(gpuCanvas);
+document.getElementsByTagName('body')[0].appendChild(cpuCanvas);
 
-let opts: EntityOpts[] = [sphere_1_opts, sphere_2_opts];
-let entities: number[][] = opts.map(function(opt) {
-  return (new Entity(opt)).toNumberArray();
-})
-
-let gpu = new GPU();
-gpu.addFunction(square);
-gpu.addFunction(dist);
-
-// Global states
-let isRunning = true;
-let mode: Mode = Mode.GPU;
-
-let gpuKernel = createKernel(Mode.GPU, entities);
-let cpuKernel = createKernel(Mode.CPU, entities);
-
-let renderLoop = renderer(gpuKernel, cpuKernel, entities, camera, lights);
+var renderLoop = renderer(gpuKernel, cpuKernel, gpuCanvas, cpuCanvas, scene);
 window.onload = renderLoop;
