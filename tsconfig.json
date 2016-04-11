@@ -8,7 +8,7 @@
     "sourceMap": true,
     "allowJs": true,
     "watch": true,
-    "target": "es6",
+    "target": "es5",
     "out": "./lib/app.js"
   },
   "files": [
