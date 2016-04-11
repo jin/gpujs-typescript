@@ -7,9 +7,9 @@ namespace Scene {
   type Light = number[];
 
   let camera: Camera = [
-    0, 300, 300,  // x,y,z coordinates idx 0, 1, 2
-    0, 0, 1,      // Direction normal vector idx 3, 4, 5
-    45            // field of view : example 45. idx 6
+    0, 1.8, 10,  // x,y,z coordinates idx 0, 1, 2
+    0, 3, 0,      // Direction normal vector idx 3, 4, 5
+    45            // Field of view. idx 6
   ];
 
   let lights: Light[] = [
@@ -21,10 +21,10 @@ namespace Scene {
     red: 1.0,
     green: 0.7,
     blue: 0.7,
-    x: 700,
-    y: 500,
-    z: 500,
-    radius: 40,
+    x: 0,
+    y: 3.5,
+    z: -3,
+    radius: 3,
     specularReflection: 0.2,
     lambertianReflection: 0.7,
     ambientColor: 0.1,
@@ -36,10 +36,10 @@ namespace Scene {
     red: 1.0,
     green: 0.7,
     blue: 0.2,
-    x: 500,
-    y: 100,
-    z: 100,
-    radius: 80,
+    x: -4,
+    y: 3,
+    z: -1,
+    radius: 0.2,
     specularReflection: 0.2,
     lambertianReflection: 0.7,
     ambientColor: 0.1,
@@ -62,7 +62,7 @@ namespace Scene {
     opacity: 1.0
   }
 
-  let opts: Entity.Opts[] = [sphere_1_opts, sphere_2_opts, cylinder_opts];
+  let opts: Entity.Opts[] = [sphere_1_opts, sphere_2_opts];
   let entities: Entity.Entity[] = opts.map(function(opt) {
     return new Entity.Entity(opt);
   })
@@ -75,7 +75,7 @@ namespace Scene {
   let canvasHeight = 600;
   let canvasWidth = 600;
 
-  let fovRadians = Math.PI * (camera[7] / 2) / 180;
+  let fovRadians = Math.PI * (camera[6] / 2) / 180;
   let heightWidthRatio = canvasHeight / canvasWidth;
   let halfWidth = Math.tan(fovRadians);
   let halfHeight = heightWidthRatio * halfWidth;

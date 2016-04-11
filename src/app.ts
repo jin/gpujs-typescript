@@ -114,10 +114,11 @@ var renderer = (gpuKernel: any, cpuKernel: any,
       bdy.replaceChild(newCanvas, cv);
     }
 
-    entities[0][1] = (entities[0][1] + 2) % 900;
-    entities[1][2] = (entities[1][2] + 2) % 700;
-    setTimeout(renderLoop, 1);            // Uncomment this line, and comment the next line
-    // requestAnimationFrame(nextTick);     // to see how fast this could run...
+    // entities[0][1] = (entities[0][1] + 1) % 900;
+    // entities[0][1] = (entities[0][2] + 1) % 900;
+    // entities[1][2] = (entities[1][2] + 2) % 700;
+    // setTimeout(renderLoop, 1);            // Uncomment this line, and comment the next line
+    requestAnimationFrame(nextTick);     // to see how fast this could run...
   }
 
   return nextTick;
@@ -159,9 +160,9 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
   };
 
   return gpu.createKernel(function(
-    c: number[], 
-    l: number[], 
-    e: number[][], 
+    camera: number[], 
+    lights: number[], 
+    entities: number[][], 
     eyeVector: number[],
     vpRight: number[],
     vpUp: number[],
@@ -194,21 +195,76 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
     var x15 = scaleX(1, 2, 3, 4);
     var x16 = scaleY(1, 2, 3, 4);
     var x17 = scaleZ(1, 2, 3, 4);
+    var x18 = add3X(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    var x19 = add3Y(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    var x20 = add3Z(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    var x21 = sphereIntersection(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 
     // Start by creating a simple vector pointing in the direction the camera is
     
     // raytracer start
-    // raytracer end
     
-    this.color(0.95, 0.95, 0.95);
+    var x = this.thread.x;
+    var y = this.thread.y;
 
+    var xCompX = vpRight[0] * (x * pixelWidth - halfWidth);
+    var xCompY = vpRight[1] * (x * pixelWidth - halfWidth);
+    var xCompZ = vpRight[2] * (x * pixelWidth - halfWidth);
+
+    var yCompX = vpUp[0] * (y * pixelHeight - halfHeight);
+    var yCompY = vpUp[1] * (y * pixelHeight - halfHeight);
+    var yCompZ = vpUp[2] * (y * pixelHeight - halfHeight);
+
+    var rayPtX = camera[0];
+    var rayPtY = camera[1];
+    var rayPtZ = camera[2];
+
+    var rayVecX = eyeVector[0] + xCompX + yCompX;
+    var rayVecY = eyeVector[1] + xCompY + yCompY;
+    var rayVecZ = eyeVector[2] + xCompZ + yCompZ;
+
+    var normRayVecX = normalizeX(rayVecX, rayVecY, rayVecZ);
+    var normRayVecY = normalizeY(rayVecX, rayVecY, rayVecZ);
+    var normRayVecZ = normalizeZ(rayVecX, rayVecY, rayVecZ);
+
+    var colorX = 0.95;
+    var colorY = 0.95;
+    var colorZ = 0.95;
+
+    // raytracer end
+
+    var nearestEntityIndex = -1;
+    var maxEntityDistance = 2 ** 64;
+    var nearestEntityDistance = 2 ** 64;
+
+    this.color(colorX, colorY, colorZ); // default background color
+
+    // Get nearest object
     for (var i = 0; i < this.constants.ENTITY_COUNT; i++) {
-      if (e[i][0] == this.constants.SPHERE) {
-        if (dist(this.thread.x, this.thread.y, e[i][1], e[i][2]) < e[i][7]) {
-          this.color(e[i][8],e[i][9] + i, e[i][10]);
-        }
+      if (entities[i][0] == this.constants.SPHERE) {
+
+        var distance = sphereIntersection(
+          entities[i][1], entities[i][2], entities[i][3],
+          entities[i][7],
+          rayPtX, rayPtY, rayPtZ,
+          normRayVecX, normRayVecY, normRayVecZ
+        );
+
+        if (distance >= 0 && distance < nearestEntityDistance) {
+          nearestEntityDistance = distance;
+          nearestEntityIndex = i;
+        } 
+
+        // moving sphere code
+        // if (dist(this.thread.x, this.thread.y, entities[i][1], entities[i][2]) < entities[i][7]) {
+        //   this.color((entities[i][8] + y) / 600, (entities[i][9] + x) / 600, entities[i][10]);
       }
     }
+
+    if (nearestEntityIndex > -1) {
+      this.color(entities[nearestEntityIndex][8], entities[nearestEntityIndex][9], entities[nearestEntityIndex][10]);
+    }
+
   }, opt);
 }
 
