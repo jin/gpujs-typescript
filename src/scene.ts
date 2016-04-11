@@ -22,9 +22,9 @@ namespace Scene {
     red: 1.0,
     green: 0.7,
     blue: 0.7,
-    x: 0,
+    x: -4,
     y: 3.5,
-    z: -3,
+    z: -2,
     radius: 0.5,
     specularReflection: 0.2,
     lambertianReflection: 1,
@@ -41,8 +41,8 @@ namespace Scene {
     green: 0.7,
     blue: 0.2,
     x: -4,
-    y: 3,
-    z: -1,
+    y: 3.5,
+    z: -2,
     radius: 0.7,
     specularReflection: 0.2,
     lambertianReflection: 0.7,
@@ -52,6 +52,43 @@ namespace Scene {
     directionY: 0.02,
     directionZ: 0.11
   }
+
+  let sphere_3_opts: Entity.Opts = {
+    entityType: Entity.Type.SPHERE,
+    red: 0.6,
+    green: 0.7,
+    blue: 0.3,
+    x: -4,
+    y: 3.5,
+    z: -2,
+    radius: 0.4,
+    specularReflection: 0.2,
+    lambertianReflection: 0.6,
+    ambientColor: 0.1,
+    opacity: 1.0,
+    directionX: 0.02,
+    directionY: -0.02,
+    directionZ: -0.05
+  }
+
+  let sphere_4_opts: Entity.Opts = {
+    entityType: Entity.Type.SPHERE,
+    red: 0.4,
+    green: 0.2,
+    blue: 0.4,
+    x: -4,
+    y: 3.5,
+    z: -2,
+    radius: 0.9,
+    specularReflection: 0.2,
+    lambertianReflection: 0.8,
+    ambientColor: 0.1,
+    opacity: 1.0,
+    directionX: 0.04,
+    directionY: -0.06,
+    directionZ: 0.11
+  }
+
 
   let cylinder_opts: Entity.Opts = {
     entityType: Entity.Type.CYLINDER,
@@ -72,7 +109,12 @@ namespace Scene {
     directionZ: 0
   }
 
-  let opts: Entity.Opts[] = [sphere_1_opts, sphere_2_opts];
+  let opts: Entity.Opts[] = [
+    sphere_1_opts, 
+    sphere_2_opts,
+    sphere_3_opts,
+    sphere_4_opts
+  ];
   let entities: Entity.Entity[] = opts.map(function(opt) {
     return new Entity.Entity(opt);
   })
