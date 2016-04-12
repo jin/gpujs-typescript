@@ -175,6 +175,24 @@ function sphereNormalZ(spherePtX, spherePtY, spherePtZ, surfacePtX, surfacePtY, 
   return z * (1 / mag);
 }
 
+function reflectVecX(incidentVecX, incidentVecY, incidentVecZ, normalVecX, normalVecY, normalVecZ) {
+  var scaleFactor = incidentVecX * normalVecX + incidentVecY * normalVecY + incidentVecZ * normalVecZ;
+  var normalVecXScaled = normalVecX * scaleFactor * 2;
+  return normalVecXScaled - incidentVecX;
+}
+
+function reflectVecY(incidentVecX, incidentVecY, incidentVecZ, normalVecX, normalVecY, normalVecZ) {
+  var scaleFactor = incidentVecX * normalVecX + incidentVecY * normalVecY + incidentVecZ * normalVecZ;
+  var normalVecYScaled = normalVecY * scaleFactor * 2;
+  return normalVecYScaled - incidentVecY;
+}
+
+function reflectVecZ(incidentVecX, incidentVecY, incidentVecZ, normalVecX, normalVecY, normalVecZ) {
+  var scaleFactor = incidentVecX * normalVecX + incidentVecY * normalVecY + incidentVecZ * normalVecZ;
+  var normalVecZScaled = normalVecZ * scaleFactor * 2;
+  return normalVecZScaled - incidentVecZ;
+}
+
 // let x = 300, y = 300;
 // console.log(sphereIntersection(testSphere.x, testSphere.y, testSphere.z, testSphere.radius, testRay.point.x, testRay.point.y, testRay.point.z, testRay.getVector(x, y)[0], testRay.getVector(x, y)[1], testRay.getVector(x, y)[2]));
 
@@ -217,5 +235,6 @@ let vectorFunctions = [
   scaleX, scaleY, scaleZ,
   dotProduct,
   sphereIntersection,
-  sphereNormalX, sphereNormalY, sphereNormalZ
+  sphereNormalX, sphereNormalY, sphereNormalZ,
+  reflectVecX, reflectVecY, reflectVecZ
 ];

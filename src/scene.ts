@@ -18,12 +18,20 @@ namespace Scene {
     [4, 3, 5, 0, 1, 0]
   ];
 
+  let lightEntity = {
+    entityType: Entity.Type.SPHERE,
+    red: 1, green: 1, blue: 1,
+    x: 0, y: 3, z: 1.8, radius: 0.2,
+    specularReflection: 0.2, lambertianReflection: 1, ambientColor: 0.1, opacity: 1.0,
+    directionX: 0, directionY: 0, directionZ: 0
+  };
+
   let sphere_opts: Entity.Opts[] = [
     {
       entityType: Entity.Type.SPHERE,
       red: 1.0, green: 0.7, blue: 0.7,
       x: -4, y: 3.5, z: -2, radius: 0.5,
-      specularReflection: 0.2, lambertianReflection: 1, ambientColor: 0.1, opacity: 1.0,
+      specularReflection: 0.1, lambertianReflection: 1, ambientColor: 0.1, opacity: 1.0,
       directionX: 0.05, directionY: 0.05, directionZ: -0.05
     },
 
@@ -65,7 +73,7 @@ namespace Scene {
           entityType: Entity.Type.SPHERE,
           red: rand(0.1, 0.9), green: rand(0.1, 0.9), blue: rand(0.1, 0.9),
           x: rand(-4, 4), y: rand(0, 7), z: rand(-7, 2), radius: rand(0.3, 1.5),
-          specularReflection: rand(0, 1), lambertianReflection: rand(0.8, 1), ambientColor: rand(0, 1), opacity: rand(0, 1),
+          specularReflection: rand(0.1, 0.2), lambertianReflection: rand(0.8, 1), ambientColor: rand(0, 1), opacity: rand(0, 1),
           directionX: rand(minDirection, maxDirection), directionY: rand(minDirection, maxDirection), directionZ: rand(minDirection, maxDirection)
         }
       )
@@ -94,7 +102,7 @@ namespace Scene {
   }
 
   // let opts: Entity.Opts[] = sphere_opts.concat(generateRandomSpheres(2));
-  let opts: Entity.Opts[] = generateRandomSpheres(parseInt(rand(2, 5)));
+  let opts: Entity.Opts[] = generateRandomSpheres(parseInt(rand(2, 5))).concat([lightEntity]);
 
   let entities: Entity.Entity[] = opts.map(function(opt) {
     return new Entity.Entity(opt);

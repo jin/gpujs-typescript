@@ -6,9 +6,14 @@
     <title>GPU.js Raytracer</title>
   </head>
   <body>
-    <div> <input type="button" value="Pause" onclick="togglePause(this)" /> </div>
-    <div> <input type="button" value="CPU" onclick="toggleMode(this)" /> </div>
-    <div id="fps">7</div>
+    <p>A parallel raytracer built with TypeScript and <a href="http://gpu.rocks">GPU.js</a> (WebGL/GLSL).</p>
+
+    <p>WASD to move around.</p>
+    <div> 
+      <input type="button" value="CPU" onclick="toggleMode(this)" /> 
+      <input type="button" value="Pause" onclick="togglePause(this)" /> 
+      <span id="fps">Loading..</span>
+    </div>
     <script src="lib/app.js" type="text/javascript" charset="utf-8" async></script>
   </body>
 </html>

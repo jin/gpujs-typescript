@@ -9,7 +9,7 @@ var mode = Mode.GPU;
 let togglePause = (el: HTMLInputElement) : void => {
   el.value = isRunning ? "Start" : "Pause";
   isRunning = !isRunning;
-  renderLoop = renderer(gpuKernel, cpuKernel, gpuCanvas, cpuCanvas, scene);
+  // renderLoop = renderer(gpuKernel, cpuKernel, gpuCanvas, cpuCanvas, scene);
   if (isRunning) { renderLoop() };
 }
 
@@ -22,6 +22,10 @@ let toggleMode = (el: HTMLInputElement) : void => {
 var renderer = (gpuKernel: any, cpuKernel: any,
                 gpuCanvas: any, cpuCanvas: any, scene: Scene.Scene) : () => void => {
 
+  enum Movement { 
+    Forward, Backward, LeftStrafe, RightStrafe,
+    LookUp, LookDown, LookLeft, LookRight
+  }
 
   let camera = scene.camera,
     lights = scene.lights,
@@ -39,6 +43,42 @@ var renderer = (gpuKernel: any, cpuKernel: any,
     cameraHeight = scene.cameraHeight,
     pixelWidth = scene.pixelWidth,
     pixelHeight = scene.pixelHeight;
+
+  document.onkeydown = function (e) {
+    let keyMap = {
+      87: Movement.Forward,
+      83: Movement.Backward, 
+      65: Movement.LeftStrafe,
+      68: Movement.RightStrafe,
+      38: Movement.LookUp,
+      40: Movement.LookDown,
+      37: Movement.LookLeft,
+      39: Movement.LookRight
+    }
+
+    let forwardSpeed = 0.2;
+    let backwardSpeed = 0.2;
+    let strafeSpeed = 0.2;
+
+    switch (keyMap[e.keyCode]) {
+      case Movement.Forward:
+        camera[2] -= forwardSpeed;
+        break;
+      case Movement.Backward:
+        camera[2] += backwardSpeed;
+        break;
+      case Movement.LeftStrafe:
+        camera[0] -= strafeSpeed;
+        break;
+      case Movement.RightStrafe:
+        camera[0] += strafeSpeed;
+        break;
+      case Movement.LookLeft:
+        break;
+      default:
+        break;
+    }
+  };
 
   var fps = {
     startTime: 0,
@@ -307,7 +347,9 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
         }
       }
 
-      var depth = 0;
+      this.color(red, green, blue); // Set ray-entity intersection color or background color
+
+      // Reflections (Lambertian, Specular)
 
       if (nearestEntityIndex >= 0) {
         var entityPtX = entities[nearestEntityIndex][1];
@@ -327,6 +369,8 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
         var sphereNormPtZ = sphereNormalZ(entityPtX, entityPtY, entityPtZ, intersectPtX, intersectPtY, intersectPtZ);
 
         // Lambertian reflection
+        
+        var lambertRed, lambertGreen, lambertBlue;
 
         for (var i = 0; i < this.constants.LIGHT_COUNT; i++) {
           var lightPtX = lights[i][0];
@@ -369,14 +413,64 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
           }
 
           lambertAmount = Math.min(1, lambertAmount);
-          red = entityRed * lambertAmount * entityLambert;
-          green = entityGreen * lambertAmount * entityLambert;
-          blue = entityBlue * lambertAmount * entityLambert;
+          lambertRed = entityRed * lambertAmount * entityLambert;
+          lambertGreen = entityGreen * lambertAmount * entityLambert;
+          lambertBlue = entityBlue * lambertAmount * entityLambert;
         }
 
+        // Specular reflection
+        
+        var specularRed = 0, specularBlue = 0, specularGreen = 0;
+
+        var incidentRayVecX = rayVecX;
+        var incidentRayVecY = rayVecY;
+        var incidentRayVecZ = rayVecZ;
+        
+        var reflectedPtX = intersectPtX;
+        var reflectedPtY = intersectPtY;
+        var reflectedPtZ = intersectPtZ;
+
+        var depthLimit = 1;
+        var depth = 0;
+        
+        var entitySpecular = entities[nearestEntityIndex][13];
+
+        while (depth < depthLimit) {
+
+          var reflectedVecX = -reflectVecX(incidentRayVecX, incidentRayVecY, incidentRayVecZ, sphereNormPtX, sphereNormPtY, sphereNormPtZ);
+          var reflectedVecY = -reflectVecY(incidentRayVecX, incidentRayVecY, incidentRayVecZ, sphereNormPtX, sphereNormPtY, sphereNormPtZ);
+          var reflectedVecZ = -reflectVecZ(incidentRayVecX, incidentRayVecY, incidentRayVecZ, sphereNormPtX, sphereNormPtY, sphereNormPtZ);
+
+          var nearestEntityIndexSpecular = -1;
+          var maxEntityDistanceSpecular = 2 ** 32; // All numbers in GPU.js are of Float32 type
+          var nearestEntityDistanceSpecular = 2 ** 32;
+
+          // Get nearest object
+          for (var i = 0; i < this.constants.ENTITY_COUNT; i++) {
+            if (entities[i][0] == this.constants.SPHERE) {
+              var distance = sphereIntersection(
+                entities[i][1], entities[i][2], entities[i][3],
+                entities[i][7],
+                reflectedPtX, reflectedPtY, reflectedPtZ,
+                reflectedVecX, reflectedVecY, reflectedVecZ 
+              );
+
+              if (distance >= 0 && distance < nearestEntityDistance) {
+                nearestEntityIndexSpecular = i;
+                nearestEntityDistanceSpecular = distance;
+                specularRed = entities[i][8] * entitySpecular;
+                specularGreen = entities[i][9] * entitySpecular;
+                specularBlue = entities[i][10] * entitySpecular;
+              }
+            }
+          }
+
+          depth += 1;
+        }
+
+        this.color(lambertRed + specularRed, lambertGreen + specularGreen, lambertBlue + specularBlue);
       }
 
-      this.color(red, green, blue); // default background color
 
     }, opt);
 }
