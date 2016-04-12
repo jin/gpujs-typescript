@@ -43,7 +43,9 @@ var renderer = (gpuKernel: any, cpuKernel: any,
   var fps = {
     startTime: 0,
     frameNumber: 0,
+    totalFrameCount: 0,
     getFPS: function(){
+      this.totalFrameCount++;
       this.frameNumber++;
       var d = new Date().getTime()
       var currentTime = (d - this.startTime) / 1000
@@ -114,11 +116,22 @@ var renderer = (gpuKernel: any, cpuKernel: any,
       bdy.replaceChild(newCanvas, cv);
     }
 
+    var totalFrameCount = fps.totalFrameCount;
+
+    if (totalFrameCount % 6 == 0) {
+      lights.forEach(function(light, idx) {
+        // lights[idx][1] = Math.sin(totalFrameCount) * idx;
+        lights[idx][0] = Math.sin(totalFrameCount) * 20 * idx;
+        lights[idx][2] = 3 + Math.cos(totalFrameCount) * 2 * idx;
+      })
+    }
+
     entities.forEach(function(entity, idx) {
       entities[idx] = moveEntity(canvasWidth, canvasWidth, canvasWidth, entity);
     })
 
-    // setTimeout(renderLoop, 1000 / 70);            // Uncomment this line, and comment the next line
+
+    // setTimeout(renderLoop, 1);            // Uncomment this line, and comment the next line
     requestAnimationFrame(nextTick);     // to see how fast this could run...
   }
 
@@ -266,15 +279,13 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
       var normRayVecZ = normalizeZ(rayVecX, rayVecY, rayVecZ);
 
       // default background color
-      var red = 0.95;
-      var green = 0.95;
-      var blue = 0.95;
-
-      // raytracer end
+      var red = 0.75;
+      var green = 0.75;
+      var blue = 0.75;
 
       var nearestEntityIndex = -1;
-      var maxEntityDistance = 2 ** 64;
-      var nearestEntityDistance = 2 ** 64;
+      var maxEntityDistance = 2 ** 32; // All numbers in GPU.js are of Float32 type
+      var nearestEntityDistance = 2 ** 32;
 
       // Get nearest object
       for (var i = 0; i < this.constants.ENTITY_COUNT; i++) {
@@ -296,75 +307,73 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
         }
       }
 
-
       var depth = 0;
+
       if (nearestEntityIndex >= 0) {
-        while (depth < 1) {
-          var entityPtX = entities[nearestEntityIndex][1];
-          var entityPtY = entities[nearestEntityIndex][2];
-          var entityPtZ = entities[nearestEntityIndex][3];
+        var entityPtX = entities[nearestEntityIndex][1];
+        var entityPtY = entities[nearestEntityIndex][2];
+        var entityPtZ = entities[nearestEntityIndex][3];
 
-          var entityRed = entities[nearestEntityIndex][8];
-          var entityGreen = entities[nearestEntityIndex][9];
-          var entityBlue = entities[nearestEntityIndex][10];
+        var entityRed = entities[nearestEntityIndex][8];
+        var entityGreen = entities[nearestEntityIndex][9];
+        var entityBlue = entities[nearestEntityIndex][10];
 
-          var intersectPtX = rayPtX + normRayVecX * nearestEntityDistance;
-          var intersectPtY = rayPtY + normRayVecY * nearestEntityDistance;
-          var intersectPtZ = rayPtZ + normRayVecZ * nearestEntityDistance;
+        var intersectPtX = rayPtX + normRayVecX * nearestEntityDistance;
+        var intersectPtY = rayPtY + normRayVecY * nearestEntityDistance;
+        var intersectPtZ = rayPtZ + normRayVecZ * nearestEntityDistance;
 
-          var sphereNormPtX = sphereNormalX(entityPtX, entityPtY, entityPtZ, intersectPtX, intersectPtY, intersectPtZ);
-          var sphereNormPtY = sphereNormalY(entityPtX, entityPtY, entityPtZ, intersectPtX, intersectPtY, intersectPtZ);
-          var sphereNormPtZ = sphereNormalZ(entityPtX, entityPtY, entityPtZ, intersectPtX, intersectPtY, intersectPtZ);
+        var sphereNormPtX = sphereNormalX(entityPtX, entityPtY, entityPtZ, intersectPtX, intersectPtY, intersectPtZ);
+        var sphereNormPtY = sphereNormalY(entityPtX, entityPtY, entityPtZ, intersectPtX, intersectPtY, intersectPtZ);
+        var sphereNormPtZ = sphereNormalZ(entityPtX, entityPtY, entityPtZ, intersectPtX, intersectPtY, intersectPtZ);
 
-          // Lambertian reflection
+        // Lambertian reflection
 
-          for (var i = 0; i < this.constants.LIGHT_COUNT; i++) {
-            var lightPtX = lights[i][0];
-            var lightPtY = lights[i][1];
-            var lightPtZ = lights[i][2];
+        for (var i = 0; i < this.constants.LIGHT_COUNT; i++) {
+          var lightPtX = lights[i][0];
+          var lightPtY = lights[i][1];
+          var lightPtZ = lights[i][2];
 
+          var vecToLightX = -sphereNormalX(intersectPtX, intersectPtY, intersectPtZ, lightPtX, lightPtY, lightPtZ);
+          var vecToLightY = -sphereNormalY(intersectPtX, intersectPtY, intersectPtZ, lightPtX, lightPtY, lightPtZ);
+          var vecToLightZ = -sphereNormalZ(intersectPtX, intersectPtY, intersectPtZ, lightPtX, lightPtY, lightPtZ);
 
-            var vecToLightX = sphereNormalX(intersectPtX, intersectPtY, intersectPtZ, lightPtX, lightPtY, lightPtZ);
-            var vecToLightY = sphereNormalY(intersectPtX, intersectPtY, intersectPtZ, lightPtX, lightPtY, lightPtZ);
-            var vecToLightZ = sphereNormalZ(intersectPtX, intersectPtY, intersectPtZ, lightPtX, lightPtY, lightPtZ);
+          var shadowCast = -1;
 
-            var shadowCast = -1;
+          var lambertAmount = 0;
 
-            var lambertAmount = 0;
+          var entityLambert = entities[nearestEntityIndex][11];
 
-            var entityLambert = entities[nearestEntityIndex][11];
-
-            for (var j = 0; j < this.constants.ENTITY_COUNT; j++) {
-              if (entities[j][0] == this.constants.SPHERE) {
-                var distance = sphereIntersection(
-                  entities[j][1], entities[j][2], entities[j][3],
-                  entities[j][7],
-                  intersectPtX, intersectPtY, intersectPtZ,
-                  vecToLightX, vecToLightY, vecToLightZ
-                );
-
-                if (distance > -0.005) { shadowCast = 1; }
-              }
-            }
-
-            if (shadowCast > 0) {
-              var contribution = dotProduct(
-                -vecToLightX, -vecToLightY, -vecToLightZ,
-                sphereNormPtX, sphereNormPtY, sphereNormPtZ
+          for (var j = 0; j < this.constants.ENTITY_COUNT; j++) {
+            if (entities[j][0] == this.constants.SPHERE) {
+              var distance = sphereIntersection(
+                entities[j][1], entities[j][2], entities[j][3],
+                entities[j][7],
+                intersectPtX, intersectPtY, intersectPtZ,
+                vecToLightX, vecToLightY, vecToLightZ
               );
-              if (contribution > 0) {
-                lambertAmount += contribution;
+
+              if (distance > -0.005) { 
+                shadowCast = 1; 
               }
             }
-
-            lambertAmount = Math.min(1, lambertAmount);
-            red = entityRed * lambertAmount * entityLambert;
-            green = entityGreen * lambertAmount * entityLambert;
-            blue = entityBlue * lambertAmount * entityLambert;
           }
 
-          depth += 1;
+          if (shadowCast > 0) {
+            var contribution = dotProduct(
+              -vecToLightX, -vecToLightY, -vecToLightZ,
+              sphereNormPtX, sphereNormPtY, sphereNormPtZ
+            );
+            if (contribution > 0) {
+              lambertAmount += contribution;
+            }
+          }
+
+          lambertAmount = Math.min(1, lambertAmount);
+          red = (1 - entityRed) * (lambertAmount * entityLambert);
+          green = (1 - entityGreen) * (lambertAmount * entityLambert);
+          blue = (1 - entityBlue) * (lambertAmount * entityLambert);
         }
+
       }
 
       this.color(red, green, blue); // default background color

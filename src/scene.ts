@@ -7,14 +7,15 @@ namespace Scene {
   type Light = number[];
 
   let camera: Camera = [
-    0, 0, 10,  // x,y,z coordinates idx 0, 1, 2
+    0, 0, 15,  // x,y,z coordinates idx 0, 1, 2
     0, 3, 0,      // Direction normal vector idx 3, 4, 5
     45            // Field of view. idx 6
   ];
 
   let lights: Light[] = [
-    [-800, 1000, -500, 0, 1, 0],        // light 1, x,y,z location, and rgb colour (green
-    [800, 1000, -500, 0, 1, 0]        // light 1, x,y,z location, and rgb colour (green
+    // [30, 40, -20, 0, 1, 0], // x, y, z, r, g, b
+    [4, 4, 8, 0, 1, 0],
+    [4, 8, 8, 0, 1, 0]
   ];
 
   let sphere_opts: Entity.Opts[] = [
@@ -62,9 +63,9 @@ namespace Scene {
       ary.push(
         {
           entityType: Entity.Type.SPHERE,
-          red: rand(0, 1), green: rand(0, 1), blue: rand(0, 1),
+          red: rand(0.1, 0.9), green: rand(0.1, 0.9), blue: rand(0.1, 0.9),
           x: rand(-4, 4), y: rand(0, 7), z: rand(-7, 2), radius: rand(0.3, 1),
-          specularReflection: rand(0, 1), lambertianReflection: rand(0, 1), ambientColor: rand(0, 1), opacity: rand(0, 1),
+          specularReflection: rand(0, 1), lambertianReflection: rand(0.8, 1), ambientColor: rand(0, 1), opacity: rand(0, 1),
           directionX: rand(minDirection, maxDirection), directionY: rand(minDirection, maxDirection), directionZ: rand(minDirection, maxDirection)
         }
       )
@@ -92,7 +93,8 @@ namespace Scene {
     directionZ: 0
   }
 
-  let opts: Entity.Opts[] = sphere_opts.concat(generateRandomSpheres(2));
+  // let opts: Entity.Opts[] = sphere_opts.concat(generateRandomSpheres(2));
+  let opts: Entity.Opts[] = generateRandomSpheres(parseInt(rand(2, 5)));
 
   let entities: Entity.Entity[] = opts.map(function(opt) {
     return new Entity.Entity(opt);
