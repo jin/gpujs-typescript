@@ -110,7 +110,7 @@ namespace Scene {
   }
 
   let opts: Entity.Opts[] = [
-    sphere_1_opts, 
+    sphere_1_opts,
     sphere_2_opts,
     sphere_3_opts,
     sphere_4_opts
@@ -152,7 +152,7 @@ namespace Scene {
     cameraWidth: number,
     cameraHeight: number,
     pixelWidth: number,
-    pixelHeight: number 
+    pixelHeight: number
   }
 
   export let scene = {

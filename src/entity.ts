@@ -26,21 +26,21 @@ namespace Entity {
 
   export class Entity {
 
-    entityType: Type        
-    x: number                     
-    y: number                     
-    z: number                     
-    width: number                 
-    height: number                
-    depth: number                 
-    radius: number                
-    red: number                   
-    green: number                 
-    blue: number                  
-    lambertianReflection: number  
-    opacity: number               
-    specularReflection: number    
-    ambientColor: number          
+    entityType: Type
+    x: number
+    y: number
+    z: number
+    width: number
+    height: number
+    depth: number
+    radius: number
+    red: number
+    green: number
+    blue: number
+    lambertianReflection: number
+    opacity: number
+    specularReflection: number
+    ambientColor: number
     directionX: number
     directionY: number
     directionZ: number
