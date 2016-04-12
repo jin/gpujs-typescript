@@ -19,7 +19,7 @@ let toggleMode = (el: HTMLInputElement) : void => {
   if (isRunning) { renderLoop() };
 }
 
-var renderer = (gpuKernel: any, cpuKernel: any, 
+var renderer = (gpuKernel: any, cpuKernel: any,
                 gpuCanvas: any, cpuCanvas: any, scene: Scene.Scene) : () => void => {
 
 
@@ -43,7 +43,9 @@ var renderer = (gpuKernel: any, cpuKernel: any,
   var fps = {
     startTime: 0,
     frameNumber: 0,
+    totalFrameCount: 0,
     getFPS: function(){
+      this.totalFrameCount++;
       this.frameNumber++;
       var d = new Date().getTime()
       var currentTime = (d - this.startTime) / 1000
@@ -114,14 +116,22 @@ var renderer = (gpuKernel: any, cpuKernel: any,
       bdy.replaceChild(newCanvas, cv);
     }
 
+    var totalFrameCount = fps.totalFrameCount;
+
+    if (totalFrameCount % 6 == 0) {
+      lights.forEach(function(light, idx) {
+        // lights[idx][1] = Math.sin(totalFrameCount) * idx;
+        lights[idx][0] = Math.sin(totalFrameCount) * 30 * idx;
+        lights[idx][2] = 3 + Math.cos(totalFrameCount) * 2 * idx;
+      })
+    }
+
     entities.forEach(function(entity, idx) {
       entities[idx] = moveEntity(canvasWidth, canvasWidth, canvasWidth, entity);
     })
 
-    // entities[0][1] = (entities[0][1] + 1) % 900;
-    // entities[0][1] = (entities[0][2] + 1) % 900;
-    // entities[1][2] = (entities[1][2] + 2) % 700;
-     // setTimeout(renderLoop, 1000 / 70);            // Uncomment this line, and comment the next line
+
+    // setTimeout(renderLoop, 1);            // Uncomment this line, and comment the next line
     requestAnimationFrame(nextTick);     // to see how fast this could run...
   }
 
@@ -132,8 +142,6 @@ var renderer = (gpuKernel: any, cpuKernel: any,
       let tmp = vecSubtract(incidentVec, vecScale(normal, 2 * dp));
       return tmp;
     }
-    // console.log(width, height, depth)
-    // console.log(entity[1], entity[2], entity[3])
     entity[1] += entity[15];
     entity[2] += entity[16];
     entity[3] += entity[17];
@@ -141,7 +149,7 @@ var renderer = (gpuKernel: any, cpuKernel: any,
     var normal;
     if (entity[1] < -4) {
       normal = [1, 0, 0], needsReflect = true;
-    } 
+    }
     if (entity[1] > 4.2) {
       normal = [-1, 0, 0], needsReflect = true;
     }
@@ -203,9 +211,9 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
   };
 
   return gpu.createKernel(function(
-    camera: number[], 
-    lights: number[], 
-    entities: number[][], 
+    camera: number[],
+    lights: number[],
+    entities: number[][],
     eyeVector: number[],
     vpRight: number[],
     vpUp: number[],
@@ -220,91 +228,88 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
     pixelWidth: number,
     pixelHeight: number) {
 
-    // Kernel canary code
-    var x1 = addX(1, 2, 3, 4, 5, 6);
-    var x2 = addY(1, 2, 3, 4, 5, 6);
-    var x3 = addZ(1, 2, 3, 4, 5, 6);
-    var x4 = subtractX(1, 2, 3, 4, 5, 6);
-    var x5 = subtractY(1, 2, 3, 4, 5, 6);
-    var x6 = subtractZ(1, 2, 3, 4, 5, 6);
-    var x7 = normalizeX(1, 2, 3);
-    var x8 = normalizeY(1, 2, 3);
-    var x9 = normalizeZ(1, 2, 3);
-    var x10 = dotProduct(1, 2, 3, 4, 5, 6);
-    var x11 = crossProductX(1, 2, 3, 4, 5, 6);
-    var x12 = crossProductY(1, 2, 3, 4, 5, 6);
-    var x13 = crossProductZ(1, 2, 3, 4, 5, 6);
-    var x14 = magnitude(1, 2, 3);
-    var x15 = scaleX(1, 2, 3, 4);
-    var x16 = scaleY(1, 2, 3, 4);
-    var x17 = scaleZ(1, 2, 3, 4);
-    var x18 = add3X(1, 2, 3, 4, 5, 6, 7, 8, 9);
-    var x19 = add3Y(1, 2, 3, 4, 5, 6, 7, 8, 9);
-    var x20 = add3Z(1, 2, 3, 4, 5, 6, 7, 8, 9);
-    var x21 = sphereIntersection(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+      // Kernel canary code
+      var x1 = addX(1, 2, 3, 4, 5, 6);
+      var x2 = addY(1, 2, 3, 4, 5, 6);
+      var x3 = addZ(1, 2, 3, 4, 5, 6);
+      var x4 = subtractX(1, 2, 3, 4, 5, 6);
+      var x5 = subtractY(1, 2, 3, 4, 5, 6);
+      var x6 = subtractZ(1, 2, 3, 4, 5, 6);
+      var x7 = normalizeX(1, 2, 3);
+      var x8 = normalizeY(1, 2, 3);
+      var x9 = normalizeZ(1, 2, 3);
+      var x10 = dotProduct(1, 2, 3, 4, 5, 6);
+      var x11 = crossProductX(1, 2, 3, 4, 5, 6);
+      var x12 = crossProductY(1, 2, 3, 4, 5, 6);
+      var x13 = crossProductZ(1, 2, 3, 4, 5, 6);
+      var x14 = magnitude(1, 2, 3);
+      var x15 = scaleX(1, 2, 3, 4);
+      var x16 = scaleY(1, 2, 3, 4);
+      var x17 = scaleZ(1, 2, 3, 4);
+      var x18 = add3X(1, 2, 3, 4, 5, 6, 7, 8, 9);
+      var x19 = add3Y(1, 2, 3, 4, 5, 6, 7, 8, 9);
+      var x20 = add3Z(1, 2, 3, 4, 5, 6, 7, 8, 9);
+      var x21 = sphereIntersection(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 
-    // Start by creating a simple vector pointing in the direction the camera is
-    
-    // raytracer start
-    
-    var x = this.thread.x;
-    var y = this.thread.y;
+      // Start by creating a simple vector pointing in the direction the camera is
 
-    var xCompX = vpRight[0] * (x * pixelWidth - halfWidth);
-    var xCompY = vpRight[1] * (x * pixelWidth - halfWidth);
-    var xCompZ = vpRight[2] * (x * pixelWidth - halfWidth);
+      // raytracer start
 
-    var yCompX = vpUp[0] * (y * pixelHeight - halfHeight);
-    var yCompY = vpUp[1] * (y * pixelHeight - halfHeight);
-    var yCompZ = vpUp[2] * (y * pixelHeight - halfHeight);
+      var x = this.thread.x;
+      var y = this.thread.y;
 
-    var rayPtX = camera[0];
-    var rayPtY = camera[1];
-    var rayPtZ = camera[2];
+      var xCompX = vpRight[0] * (x * pixelWidth - halfWidth);
+      var xCompY = vpRight[1] * (x * pixelWidth - halfWidth);
+      var xCompZ = vpRight[2] * (x * pixelWidth - halfWidth);
 
-    var rayVecX = eyeVector[0] + xCompX + yCompX;
-    var rayVecY = eyeVector[1] + xCompY + yCompY;
-    var rayVecZ = eyeVector[2] + xCompZ + yCompZ;
+      var yCompX = vpUp[0] * (y * pixelHeight - halfHeight);
+      var yCompY = vpUp[1] * (y * pixelHeight - halfHeight);
+      var yCompZ = vpUp[2] * (y * pixelHeight - halfHeight);
 
-    var normRayVecX = normalizeX(rayVecX, rayVecY, rayVecZ);
-    var normRayVecY = normalizeY(rayVecX, rayVecY, rayVecZ);
-    var normRayVecZ = normalizeZ(rayVecX, rayVecY, rayVecZ);
+      var rayPtX = camera[0];
+      var rayPtY = camera[1];
+      var rayPtZ = camera[2];
 
-    // default background color
-    var red = 0.95;
-    var green = 0.95;
-    var blue = 0.95;
+      var rayVecX = eyeVector[0] + xCompX + yCompX;
+      var rayVecY = eyeVector[1] + xCompY + yCompY;
+      var rayVecZ = eyeVector[2] + xCompZ + yCompZ;
 
-    // raytracer end
+      var normRayVecX = normalizeX(rayVecX, rayVecY, rayVecZ);
+      var normRayVecY = normalizeY(rayVecX, rayVecY, rayVecZ);
+      var normRayVecZ = normalizeZ(rayVecX, rayVecY, rayVecZ);
 
-    var nearestEntityIndex = -1;
-    var maxEntityDistance = 2 ** 64;
-    var nearestEntityDistance = 2 ** 64;
+      // default background color
+      var red = 0.35;
+      var green = 0.35;
+      var blue = 0.35;
 
-    // Get nearest object
-    for (var i = 0; i < this.constants.ENTITY_COUNT; i++) {
-      if (entities[i][0] == this.constants.SPHERE) {
-        var distance = sphereIntersection(
-          entities[i][1], entities[i][2], entities[i][3],
-          entities[i][7],
-          rayPtX, rayPtY, rayPtZ,
-          normRayVecX, normRayVecY, normRayVecZ
-        );
+      var nearestEntityIndex = -1;
+      var maxEntityDistance = 2 ** 32; // All numbers in GPU.js are of Float32 type
+      var nearestEntityDistance = 2 ** 32;
 
-        if (distance >= 0 && distance < nearestEntityDistance) {
-          nearestEntityIndex = i;
-          nearestEntityDistance = distance;
-          red = entities[i][8];
-          green = entities[i][9];
-          blue = entities[i][10];
-        } 
+      // Get nearest object
+      for (var i = 0; i < this.constants.ENTITY_COUNT; i++) {
+        if (entities[i][0] == this.constants.SPHERE) {
+          var distance = sphereIntersection(
+            entities[i][1], entities[i][2], entities[i][3],
+            entities[i][7],
+            rayPtX, rayPtY, rayPtZ,
+            normRayVecX, normRayVecY, normRayVecZ
+          );
+
+          if (distance >= 0 && distance < nearestEntityDistance) {
+            nearestEntityIndex = i;
+            nearestEntityDistance = distance;
+            red = entities[i][8];
+            green = entities[i][9];
+            blue = entities[i][10];
+          }
+        }
       }
-    }
 
+      var depth = 0;
 
-    var depth = 0;
-    if (nearestEntityIndex >= 0) {
-      while (depth < 1) {
+      if (nearestEntityIndex >= 0) {
         var entityPtX = entities[nearestEntityIndex][1];
         var entityPtY = entities[nearestEntityIndex][2];
         var entityPtZ = entities[nearestEntityIndex][3];
@@ -322,16 +327,15 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
         var sphereNormPtZ = sphereNormalZ(entityPtX, entityPtY, entityPtZ, intersectPtX, intersectPtY, intersectPtZ);
 
         // Lambertian reflection
-        
+
         for (var i = 0; i < this.constants.LIGHT_COUNT; i++) {
           var lightPtX = lights[i][0];
           var lightPtY = lights[i][1];
           var lightPtZ = lights[i][2];
 
-
-          var vecToLightX = sphereNormalX(intersectPtX, intersectPtY, intersectPtZ, lightPtX, lightPtY, lightPtZ);
-          var vecToLightY = sphereNormalY(intersectPtX, intersectPtY, intersectPtZ, lightPtX, lightPtY, lightPtZ);
-          var vecToLightZ = sphereNormalZ(intersectPtX, intersectPtY, intersectPtZ, lightPtX, lightPtY, lightPtZ);
+          var vecToLightX = -sphereNormalX(intersectPtX, intersectPtY, intersectPtZ, lightPtX, lightPtY, lightPtZ);
+          var vecToLightY = -sphereNormalY(intersectPtX, intersectPtY, intersectPtZ, lightPtX, lightPtY, lightPtZ);
+          var vecToLightZ = -sphereNormalZ(intersectPtX, intersectPtY, intersectPtZ, lightPtX, lightPtY, lightPtZ);
 
           var shadowCast = -1;
 
@@ -345,10 +349,12 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
                 entities[j][1], entities[j][2], entities[j][3],
                 entities[j][7],
                 intersectPtX, intersectPtY, intersectPtZ,
-                vecToLightX, vecToLightY, vecToLightZ 
+                vecToLightX, vecToLightY, vecToLightZ
               );
 
-              if (distance > -0.005) { shadowCast = 1; } 
+              if (distance > -0.005) { 
+                shadowCast = 1; 
+              }
             }
           }
 
@@ -368,13 +374,11 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
           blue = entityBlue * lambertAmount * entityLambert;
         }
 
-        depth += 1;
       }
-    }
 
-    this.color(red, green, blue); // default background color
+      this.color(red, green, blue); // default background color
 
-  }, opt);
+    }, opt);
 }
 
 let addFunctions = (gpu: any, functions: any[]) => functions.forEach(f => gpu.addFunction(f));

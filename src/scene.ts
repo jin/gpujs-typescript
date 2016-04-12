@@ -7,88 +7,72 @@ namespace Scene {
   type Light = number[];
 
   let camera: Camera = [
-    0, 0, 10,  // x,y,z coordinates idx 0, 1, 2
+    0, 0, 15,  // x,y,z coordinates idx 0, 1, 2
     0, 3, 0,      // Direction normal vector idx 3, 4, 5
-    45            // Field of view. idx 6
+    60            // Field of view. idx 6
   ];
 
   let lights: Light[] = [
-    [-800, 1000, -500, 0, 1, 0],        // light 1, x,y,z location, and rgb colour (green
-    [800, 1000, -500, 0, 1, 0]        // light 1, x,y,z location, and rgb colour (green
+    // [30, 40, -20, 0, 1, 0], // x, y, z, r, g, b
+    // [4, 0, 8, 0, 1, 0],
+    [4, 3, 5, 0, 1, 0]
   ];
 
-  let sphere_1_opts: Entity.Opts = {
-    entityType: Entity.Type.SPHERE,
-    red: 1.0,
-    green: 0.7,
-    blue: 0.7,
-    x: -4,
-    y: 3.5,
-    z: -2,
-    radius: 0.5,
-    specularReflection: 0.2,
-    lambertianReflection: 1,
-    ambientColor: 0.1,
-    opacity: 1.0,
-    directionX: 0.05,
-    directionY: 0.05,
-    directionZ: -0.05
+  let sphere_opts: Entity.Opts[] = [
+    {
+      entityType: Entity.Type.SPHERE,
+      red: 1.0, green: 0.7, blue: 0.7,
+      x: -4, y: 3.5, z: -2, radius: 0.5,
+      specularReflection: 0.2, lambertianReflection: 1, ambientColor: 0.1, opacity: 1.0,
+      directionX: 0.05, directionY: 0.05, directionZ: -0.05
+    },
+
+    {
+      entityType: Entity.Type.SPHERE,
+      red: 1.0, green: 0.7, blue: 0.2,
+      x: -4, y: 3.5, z: -2, radius: 0.7,
+      specularReflection: 0.2, lambertianReflection: 0.7, ambientColor: 0.1, opacity: 1.0,
+      directionX: 0.07, directionY: 0.02, directionZ: 0.11
+    },
+
+    {
+      entityType: Entity.Type.SPHERE,
+      red: 0.6, green: 0.7, blue: 0.3,
+      x: -4, y: 3.5, z: -2, radius: 0.4,
+      specularReflection: 0.2, lambertianReflection: 0.6, ambientColor: 0.1, opacity: 1.0,
+      directionX: 0.02, directionY: -0.02, directionZ: -0.05
+    },
+
+    {
+      entityType: Entity.Type.SPHERE,
+      red: 0.4, green: 0.2, blue: 0.4,
+      x: -4, y: 3.5, z: -2, radius: 0.9,
+      specularReflection: 0.2, lambertianReflection: 0.8, ambientColor: 0.1, opacity: 1.0,
+      directionX: 0.04, directionY: -0.06, directionZ: 0.11
+    }
+  ]
+
+  let rand = (min, max) => {
+    return Math.random() * (max - min) + min;
   }
 
-  let sphere_2_opts: Entity.Opts = {
-    entityType: Entity.Type.SPHERE,
-    red: 1.0,
-    green: 0.7,
-    blue: 0.2,
-    x: -4,
-    y: 3.5,
-    z: -2,
-    radius: 0.7,
-    specularReflection: 0.2,
-    lambertianReflection: 0.7,
-    ambientColor: 0.1,
-    opacity: 1.0,
-    directionX: 0.07,
-    directionY: 0.02,
-    directionZ: 0.11
-  }
+  let generateRandomSpheres  = (count: number) : Entity.Opts[] => {
+    let ary = [];
+    let minDirection = -0.07, maxDirection = 0.07;
+    for (let i = 0; i < count; i++) {
+      ary.push(
+        {
+          entityType: Entity.Type.SPHERE,
+          red: rand(0.1, 0.9), green: rand(0.1, 0.9), blue: rand(0.1, 0.9),
+          x: rand(-4, 4), y: rand(0, 7), z: rand(-7, 2), radius: rand(0.3, 1.5),
+          specularReflection: rand(0, 1), lambertianReflection: rand(0.8, 1), ambientColor: rand(0, 1), opacity: rand(0, 1),
+          directionX: rand(minDirection, maxDirection), directionY: rand(minDirection, maxDirection), directionZ: rand(minDirection, maxDirection)
+        }
+      )
+    }
 
-  let sphere_3_opts: Entity.Opts = {
-    entityType: Entity.Type.SPHERE,
-    red: 0.6,
-    green: 0.7,
-    blue: 0.3,
-    x: -4,
-    y: 3.5,
-    z: -2,
-    radius: 0.4,
-    specularReflection: 0.2,
-    lambertianReflection: 0.6,
-    ambientColor: 0.1,
-    opacity: 1.0,
-    directionX: 0.02,
-    directionY: -0.02,
-    directionZ: -0.05
+    return ary;
   }
-
-  let sphere_4_opts: Entity.Opts = {
-    entityType: Entity.Type.SPHERE,
-    red: 0.4,
-    green: 0.2,
-    blue: 0.4,
-    x: -4,
-    y: 3.5,
-    z: -2,
-    radius: 0.9,
-    specularReflection: 0.2,
-    lambertianReflection: 0.8,
-    ambientColor: 0.1,
-    opacity: 1.0,
-    directionX: 0.04,
-    directionY: -0.06,
-    directionZ: 0.11
-  }
-
 
   let cylinder_opts: Entity.Opts = {
     entityType: Entity.Type.CYLINDER,
@@ -109,12 +93,9 @@ namespace Scene {
     directionZ: 0
   }
 
-  let opts: Entity.Opts[] = [
-    sphere_1_opts, 
-    sphere_2_opts,
-    sphere_3_opts,
-    sphere_4_opts
-  ];
+  // let opts: Entity.Opts[] = sphere_opts.concat(generateRandomSpheres(2));
+  let opts: Entity.Opts[] = generateRandomSpheres(parseInt(rand(2, 5)));
+
   let entities: Entity.Entity[] = opts.map(function(opt) {
     return new Entity.Entity(opt);
   })
@@ -152,7 +133,7 @@ namespace Scene {
     cameraWidth: number,
     cameraHeight: number,
     pixelWidth: number,
-    pixelHeight: number 
+    pixelHeight: number
   }
 
   export let scene = {
