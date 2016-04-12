@@ -63,16 +63,16 @@ var renderer = (gpuKernel: any, cpuKernel: any,
     switch (keyMap[e.keyCode]) {
       case Movement.Forward:
         camera[2] -= forwardSpeed;
-        break;
+      break;
       case Movement.Backward:
         camera[2] += backwardSpeed;
-        break;
+      break;
       case Movement.LeftStrafe:
         camera[0] -= strafeSpeed;
-        break;
+      break;
       case Movement.RightStrafe:
         camera[0] += strafeSpeed;
-        break;
+      break;
       case Movement.LookLeft:
         break;
       default:
@@ -369,7 +369,7 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
         var sphereNormPtZ = sphereNormalZ(entityPtX, entityPtY, entityPtZ, intersectPtX, intersectPtY, intersectPtZ);
 
         // Lambertian reflection
-        
+
         var lambertRed, lambertGreen, lambertBlue;
 
         for (var i = 0; i < this.constants.LIGHT_COUNT; i++) {
@@ -418,21 +418,23 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
           lambertBlue = entityBlue * lambertAmount * entityLambert;
         }
 
+        // End Lambertian reflection
+
         // Specular reflection
-        
+
         var specularRed = 0, specularBlue = 0, specularGreen = 0;
 
         var incidentRayVecX = rayVecX;
         var incidentRayVecY = rayVecY;
         var incidentRayVecZ = rayVecZ;
-        
+
         var reflectedPtX = intersectPtX;
         var reflectedPtY = intersectPtY;
         var reflectedPtZ = intersectPtZ;
 
-        var depthLimit = 1;
+        var depthLimit = 3;
         var depth = 0;
-        
+
         var entitySpecular = entities[nearestEntityIndex][13];
 
         while (depth < depthLimit) {
@@ -458,14 +460,36 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
               if (distance >= 0 && distance < nearestEntityDistance) {
                 nearestEntityIndexSpecular = i;
                 nearestEntityDistanceSpecular = distance;
-                specularRed = entities[i][8] * entitySpecular;
-                specularGreen = entities[i][9] * entitySpecular;
-                specularBlue = entities[i][10] * entitySpecular;
               }
             }
           }
 
-          depth += 1;
+          if (nearestEntityIndexSpecular >= 0) {
+
+            entityPtX = entities[nearestEntityIndexSpecular][1];
+            entityPtY = entities[nearestEntityIndexSpecular][2];
+            entityPtZ = entities[nearestEntityIndexSpecular][3];
+
+            specularRed += entities[nearestEntityIndexSpecular][8] * entitySpecular;
+            specularGreen += entities[nearestEntityIndexSpecular][9] * entitySpecular;
+            specularBlue += entities[nearestEntityIndexSpecular][10] * entitySpecular;
+
+            reflectedPtX = reflectedPtX + normalizeX(reflectedVecX, reflectedVecY, reflectedVecZ) * nearestEntityDistance;
+            reflectedPtY = reflectedPtY + normalizeY(reflectedVecX, reflectedVecY, reflectedVecZ) * nearestEntityDistance;
+            reflectedPtZ = reflectedPtZ + normalizeZ(reflectedVecX, reflectedVecY, reflectedVecZ) * nearestEntityDistance;
+
+            sphereNormPtX = sphereNormalX(entityPtX, entityPtY, entityPtZ, reflectedPtX, reflectedPtY, reflectedPtZ);
+            sphereNormPtY = sphereNormalZ(entityPtX, entityPtY, entityPtZ, reflectedPtX, reflectedPtY, reflectedPtZ);
+            sphereNormPtY = sphereNormalZ(entityPtX, entityPtY, entityPtZ, reflectedPtX, reflectedPtY, reflectedPtZ);
+
+            incidentRayVecX = reflectedVecX;
+            incidentRayVecY = reflectedVecY;
+            incidentRayVecZ = reflectedVecZ;
+
+            depth += 1;
+          } else {
+            depth = depthLimit;
+          }
         }
 
         this.color(lambertRed + specularRed, lambertGreen + specularGreen, lambertBlue + specularBlue);

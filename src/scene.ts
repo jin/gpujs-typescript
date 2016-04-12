@@ -72,7 +72,7 @@ namespace Scene {
         {
           entityType: Entity.Type.SPHERE,
           red: rand(0.1, 0.9), green: rand(0.1, 0.9), blue: rand(0.1, 0.9),
-          x: rand(-4, 4), y: rand(0, 7), z: rand(-7, 2), radius: rand(0.3, 1.5),
+          x: rand(-4, 4), y: rand(0, 7), z: rand(-7, 2), radius: rand(0.3, 2),
           specularReflection: rand(0.1, 0.2), lambertianReflection: rand(0.8, 1), ambientColor: rand(0, 1), opacity: rand(0, 1),
           directionX: rand(minDirection, maxDirection), directionY: rand(minDirection, maxDirection), directionZ: rand(minDirection, maxDirection)
         }
