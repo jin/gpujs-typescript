@@ -121,7 +121,7 @@ var renderer = (gpuKernel: any, cpuKernel: any,
     if (totalFrameCount % 6 == 0) {
       lights.forEach(function(light, idx) {
         // lights[idx][1] = Math.sin(totalFrameCount) * idx;
-        lights[idx][0] = Math.sin(totalFrameCount) * 20 * idx;
+        lights[idx][0] = Math.sin(totalFrameCount) * 30 * idx;
         lights[idx][2] = 3 + Math.cos(totalFrameCount) * 2 * idx;
       })
     }
@@ -279,9 +279,9 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
       var normRayVecZ = normalizeZ(rayVecX, rayVecY, rayVecZ);
 
       // default background color
-      var red = 0.75;
-      var green = 0.75;
-      var blue = 0.75;
+      var red = 0.35;
+      var green = 0.35;
+      var blue = 0.35;
 
       var nearestEntityIndex = -1;
       var maxEntityDistance = 2 ** 32; // All numbers in GPU.js are of Float32 type
@@ -369,9 +369,9 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
           }
 
           lambertAmount = Math.min(1, lambertAmount);
-          red = (1 - entityRed) * (lambertAmount * entityLambert);
-          green = (1 - entityGreen) * (lambertAmount * entityLambert);
-          blue = (1 - entityBlue) * (lambertAmount * entityLambert);
+          red = entityRed * lambertAmount * entityLambert;
+          green = entityGreen * lambertAmount * entityLambert;
+          blue = entityBlue * lambertAmount * entityLambert;
         }
 
       }

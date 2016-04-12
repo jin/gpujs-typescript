@@ -9,13 +9,13 @@ namespace Scene {
   let camera: Camera = [
     0, 0, 15,  // x,y,z coordinates idx 0, 1, 2
     0, 3, 0,      // Direction normal vector idx 3, 4, 5
-    45            // Field of view. idx 6
+    60            // Field of view. idx 6
   ];
 
   let lights: Light[] = [
     // [30, 40, -20, 0, 1, 0], // x, y, z, r, g, b
-    [4, 4, 8, 0, 1, 0],
-    [4, 8, 8, 0, 1, 0]
+    // [4, 0, 8, 0, 1, 0],
+    [4, 3, 5, 0, 1, 0]
   ];
 
   let sphere_opts: Entity.Opts[] = [
@@ -58,13 +58,13 @@ namespace Scene {
 
   let generateRandomSpheres  = (count: number) : Entity.Opts[] => {
     let ary = [];
-    let minDirection = -0.12, maxDirection = 0.12;
+    let minDirection = -0.07, maxDirection = 0.07;
     for (let i = 0; i < count; i++) {
       ary.push(
         {
           entityType: Entity.Type.SPHERE,
           red: rand(0.1, 0.9), green: rand(0.1, 0.9), blue: rand(0.1, 0.9),
-          x: rand(-4, 4), y: rand(0, 7), z: rand(-7, 2), radius: rand(0.3, 1),
+          x: rand(-4, 4), y: rand(0, 7), z: rand(-7, 2), radius: rand(0.3, 1.5),
           specularReflection: rand(0, 1), lambertianReflection: rand(0.8, 1), ambientColor: rand(0, 1), opacity: rand(0, 1),
           directionX: rand(minDirection, maxDirection), directionY: rand(minDirection, maxDirection), directionZ: rand(minDirection, maxDirection)
         }
