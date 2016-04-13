@@ -13,32 +13,26 @@ namespace Scene {
     45            // Field of view. idx 6
   ];
 
-  // let lights: Light[] = [
-  //   // [30, 40, -20, 0, 1, 0], // x, y, z, r, g, b
-  //   [0, 3, 3, 0, 1, 0],
-  //   [5, 3, 3, 0, 1, 0]
-  // ];
-
   let light_opts = [
     {
       entityType: Entity.Type.SPHERE,
       red: 1, green: 1, blue: 1,
-      x: -5, y: 0, z: -2, radius: 0.1,
-      specularReflection: 0.2, lambertianReflection: 1, ambientColor: 0.1, opacity: 1.0,
+      x: -5, y: 3, z: 4, radius: 0.1,
+      specularReflection: 0.0, lambertianReflection: 1, ambientColor: 0.1, opacity: 1.0,
       directionX: 0, directionY: 0, directionZ: 0
     },
+    // {
+    //   entityType: Entity.Type.SPHERE,
+    //   red: 1, green: 1, blue: 1,
+    //   x: 0, y: 6, z: 10, radius: 0.1,
+    //   specularReflection: 0.2, lambertianReflection: 1, ambientColor: 0.1, opacity: 1.0,
+    //   directionX: 0, directionY: 0, directionZ: 0
+    // },
     {
       entityType: Entity.Type.SPHERE,
       red: 1, green: 1, blue: 1,
-      x: 0, y: 3, z: 2, radius: 0.1,
-      specularReflection: 0.2, lambertianReflection: 1, ambientColor: 0.1, opacity: 1.0,
-      directionX: 0, directionY: 0, directionZ: 0
-    },
-    {
-      entityType: Entity.Type.SPHERE,
-      red: 1, green: 1, blue: 1,
-      x: 5, y: 6, z: 6, radius: 0.1,
-      specularReflection: 0.2, lambertianReflection: 1, ambientColor: 0.1, opacity: 1.0,
+      x: 5, y: 3, z: 4, radius: 0.1,
+      specularReflection: 0.0, lambertianReflection: 1, ambientColor: 0.1, opacity: 1.0,
       directionX: 0, directionY: 0, directionZ: 0
     }
   ];
@@ -119,7 +113,7 @@ namespace Scene {
 
   // let opts: Entity.Opts[] = sphere_opts.concat(generateRandomSpheres(2));
   let opts: Entity.Opts[] = 
-    generateRandomSpheres(parseInt(rand(2, 5)))
+    generateRandomSpheres(parseInt(rand(5, 5)))
     .concat(light_opts);
 
   let entities: number[][] = opts.map(function(opt) {
@@ -132,7 +126,7 @@ namespace Scene {
   let vpUp = vecNormalize(vecCrossProduct(vpRight, eyeVector));
 
   let canvasHeight = 600;
-  let canvasWidth = 600;
+  let canvasWidth = 800;
 
   let fieldOfViewRadians = Math.PI * (camera[6] / 2) / 180;
   let heightWidthRatio = canvasHeight / canvasWidth;

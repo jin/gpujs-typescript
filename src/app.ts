@@ -8,6 +8,13 @@ var hash = hash || "GPU"
 var isRunning = true;
 var mode = (hash == "GPU") ? Mode.GPU : Mode.CPU;
 
+let stringOfMode = (mode: Mode) : string => {
+  switch(mode) {
+    case Mode.CPU: return "cpu";
+    case Mode.GPU: return "gpu";
+  }
+}
+
 let togglePause = (el: HTMLInputElement) : void => {
   el.value = isRunning ? "Start" : "Pause";
   isRunning = !isRunning;
@@ -20,8 +27,22 @@ let toggleMode = () : void => {
   location.reload();
 }
 
+let benchmark = () : void => {
+  let duration = 1000;
+  setTimeout(() => {
+    console.log("Test GPU");
+    setTimeout(() => {
+      console.log("Test CPU");
+      setTimeout(() => {
+        console.log("Compare results");
+      }, 1000);
+    }, duration);
+  }, duration);
+}
+
 var renderer = (gpuKernel: any, cpuKernel: any,
-                gpuCanvas: any, cpuCanvas: any, scene: Scene.Scene) : () => void => {
+                gpuCanvas: any, cpuCanvas: any, 
+                scene: Scene.Scene) : () => void => {
 
   enum Movement {
     Forward, Backward, LeftStrafe, RightStrafe,
@@ -209,27 +230,20 @@ var renderer = (gpuKernel: any, cpuKernel: any,
   return nextTick;
 }
 
+interface KernelOptions {
+  dimensions: number[],
+  debug?: boolean,
+  graphical?: boolean,
+  safeTextureReadHack?: boolean,
+  mode: string,
+  constants?: {}
+}
+
 var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
-
-  interface KernelOptions {
-    dimensions?: number[],
-    debug?: boolean,
-    graphical?: boolean,
-    safeTextureReadHack?: boolean,
-    mode?: string,
-    constants?: {}
-  }
-
-  let stringOfMode = (mode: Mode) : string => {
-    switch(mode) {
-      case Mode.CPU: return "cpu";
-      case Mode.GPU: return "gpu";
-    }
-  }
 
   const opt: KernelOptions = {
     mode: stringOfMode(mode),
-    dimensions: [600, 600],
+    dimensions: [800, 600],
     debug: true,
     graphical: true,
     safeTextureReadHack: false,
@@ -314,9 +328,9 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
       var normRayVecZ = normalizeZ(rayVecX, rayVecY, rayVecZ);
 
       // default background color
-      var red = 0.35;
-      var green = 0.35;
-      var blue = 0.35;
+      var red = 0.05;
+      var green = 0.05;
+      var blue = 0.05;
 
       var nearestEntityIndex = -1;
       var maxEntityDistance = 2 ** 32; // All numbers in GPU.js are of Float32 type
