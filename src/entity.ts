@@ -1,4 +1,3 @@
-
 namespace Entity {
 
   export enum Type { EMPTY, SPHERE, CUBOID, CYLINDER, CONE, TRIANGLE }
@@ -97,4 +96,3 @@ namespace Entity {
 
   }
 }
-
