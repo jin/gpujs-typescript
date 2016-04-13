@@ -9,11 +9,27 @@
     <p>A parallel raytracer built with TypeScript and <a href="http://gpu.rocks">GPU.js</a> (WebGL/GLSL).</p>
 
     <p>WASD to move around.</p>
-    <div> 
-      <input type="button" value="CPU" onclick="toggleMode(this)" /> 
-      <input type="button" value="Pause" onclick="togglePause(this)" /> 
-      <span id="fps">Loading..</span>
-    </div>
+
+    <p>
+      Current mode: <span id="mode">GPU</span>
+      <input type="button" value="Switch mode" onclick="toggleMode()" />
+    </p>
+    <p>
+      FPS: <span id="fps">Loading..</span>
+      <input type="button" value="Pause" onclick="togglePause(this)" />
+    </p>
+
+    <script type="text/javascript" charset="utf-8">
+      if (window.location.hash) {
+        retrievedHash = window.location.hash.substring(1);
+        if (retrievedHash == "GPU" || retrievedHash === "CPU") {
+          document.getElementById("mode").innerHTML = retrievedHash;
+          window.hash = retrievedHash;
+        } else {
+          window.hash = "GPU";
+        }
+      }
+    </script>
     <script src="lib/app.js" type="text/javascript" charset="utf-8" async></script>
   </body>
 </html>

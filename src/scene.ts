@@ -1,5 +1,6 @@
 /// <reference path="entity.ts" />
 /// <reference path="vector.ts" />
+/// <reference path="utils.ts" />
 
 namespace Scene {
 
@@ -7,24 +8,44 @@ namespace Scene {
   type Light = number[];
 
   let camera: Camera = [
-    0, 0, 15,  // x,y,z coordinates idx 0, 1, 2
+    0, 0, 25,  // x,y,z coordinates idx 0, 1, 2
     0, 3, 0,      // Direction normal vector idx 3, 4, 5
-    60            // Field of view. idx 6
+    45            // Field of view. idx 6
   ];
 
-  let lights: Light[] = [
-    // [30, 40, -20, 0, 1, 0], // x, y, z, r, g, b
-    // [4, 0, 8, 0, 1, 0],
-    [4, 3, 5, 0, 1, 0]
+  // let lights: Light[] = [
+  //   // [30, 40, -20, 0, 1, 0], // x, y, z, r, g, b
+  //   [0, 3, 3, 0, 1, 0],
+  //   [5, 3, 3, 0, 1, 0]
+  // ];
+
+  let light_opts = [
+    {
+      entityType: Entity.Type.SPHERE,
+      red: 1, green: 1, blue: 1,
+      x: -5, y: 0, z: -2, radius: 0.1,
+      specularReflection: 0.2, lambertianReflection: 1, ambientColor: 0.1, opacity: 1.0,
+      directionX: 0, directionY: 0, directionZ: 0
+    },
+    {
+      entityType: Entity.Type.SPHERE,
+      red: 1, green: 1, blue: 1,
+      x: 0, y: 3, z: 2, radius: 0.1,
+      specularReflection: 0.2, lambertianReflection: 1, ambientColor: 0.1, opacity: 1.0,
+      directionX: 0, directionY: 0, directionZ: 0
+    },
+    {
+      entityType: Entity.Type.SPHERE,
+      red: 1, green: 1, blue: 1,
+      x: 5, y: 6, z: 6, radius: 0.1,
+      specularReflection: 0.2, lambertianReflection: 1, ambientColor: 0.1, opacity: 1.0,
+      directionX: 0, directionY: 0, directionZ: 0
+    }
   ];
 
-  let lightEntity = {
-    entityType: Entity.Type.SPHERE,
-    red: 1, green: 1, blue: 1,
-    x: 0, y: 3, z: 1.8, radius: 0.2,
-    specularReflection: 0.2, lambertianReflection: 1, ambientColor: 0.1, opacity: 1.0,
-    directionX: 0, directionY: 0, directionZ: 0
-  };
+  let lights: number[][] = light_opts.map(light => {
+    return [light.x, light.y, light.z + 1, light.red, light.green, light.blue];
+  })
 
   let sphere_opts: Entity.Opts[] = [
     {
@@ -60,10 +81,6 @@ namespace Scene {
     }
   ]
 
-  let rand = (min, max) => {
-    return Math.random() * (max - min) + min;
-  }
-
   let generateRandomSpheres  = (count: number) : Entity.Opts[] => {
     let ary = [];
     let minDirection = -0.07, maxDirection = 0.07;
@@ -78,7 +95,6 @@ namespace Scene {
         }
       )
     }
-
     return ary;
   }
 
@@ -102,11 +118,13 @@ namespace Scene {
   }
 
   // let opts: Entity.Opts[] = sphere_opts.concat(generateRandomSpheres(2));
-  let opts: Entity.Opts[] = generateRandomSpheres(parseInt(rand(2, 5))).concat([lightEntity]);
+  let opts: Entity.Opts[] = 
+    generateRandomSpheres(parseInt(rand(2, 5)))
+    .concat(light_opts);
 
-  let entities: Entity.Entity[] = opts.map(function(opt) {
+  let entities: number[][] = opts.map(function(opt) {
     return new Entity.Entity(opt);
-  })
+  }).map(ent => ent.toVector());
 
   let eyeVector = vecNormalize(vecSubtract([camera[3], camera[4], camera[5]], [camera[0], camera[1], camera[2]]));
 
@@ -128,7 +146,7 @@ namespace Scene {
   export interface Scene {
     camera: number[],
     lights: number[][],
-    entities: Entity.Entity[],
+    entities: number[][],
     eyeVector: number[],
     vpRight: number[],
     vpUp: number[],

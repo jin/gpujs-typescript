@@ -2,9 +2,11 @@
 
 enum Mode { GPU, CPU }
 
+var hash = hash || "GPU"
+
 // Global states
 var isRunning = true;
-var mode = Mode.GPU;
+var mode = (hash == "GPU") ? Mode.GPU : Mode.CPU;
 
 let togglePause = (el: HTMLInputElement) : void => {
   el.value = isRunning ? "Start" : "Pause";
@@ -13,23 +15,22 @@ let togglePause = (el: HTMLInputElement) : void => {
   if (isRunning) { renderLoop() };
 }
 
-let toggleMode = (el: HTMLInputElement) : void => {
-  el.value = (mode == Mode.CPU) ? "CPU" : "GPU";
-  mode = (mode == Mode.CPU) ? Mode.GPU : Mode.CPU;
-  if (isRunning) { renderLoop() };
+let toggleMode = () : void => {
+  window.location.hash = (mode == Mode.GPU) ? "CPU" : "GPU"
+  location.reload();
 }
 
 var renderer = (gpuKernel: any, cpuKernel: any,
                 gpuCanvas: any, cpuCanvas: any, scene: Scene.Scene) : () => void => {
 
-  enum Movement { 
+  enum Movement {
     Forward, Backward, LeftStrafe, RightStrafe,
     LookUp, LookDown, LookLeft, LookRight
   }
 
   let camera = scene.camera,
     lights = scene.lights,
-    entities = scene.entities.map(f => f.toVector()),
+    entities = scene.entities,
     eyeVector = scene.eyeVector,
     vpRight = scene.vpRight,
     vpUp = scene.vpUp,
@@ -47,7 +48,7 @@ var renderer = (gpuKernel: any, cpuKernel: any,
   document.onkeydown = function (e) {
     let keyMap = {
       87: Movement.Forward,
-      83: Movement.Backward, 
+      83: Movement.Backward,
       65: Movement.LeftStrafe,
       68: Movement.RightStrafe,
       38: Movement.LookUp,
@@ -158,21 +159,20 @@ var renderer = (gpuKernel: any, cpuKernel: any,
 
     var totalFrameCount = fps.totalFrameCount;
 
-    if (totalFrameCount % 6 == 0) {
-      lights.forEach(function(light, idx) {
-        // lights[idx][1] = Math.sin(totalFrameCount) * idx;
-        lights[idx][0] = Math.sin(totalFrameCount) * 30 * idx;
-        lights[idx][2] = 3 + Math.cos(totalFrameCount) * 2 * idx;
-      })
-    }
+    // if (totalFrameCount % 6 == 0) {
+    //   lights.forEach(function(light, idx) {
+    //     // lights[idx][1] = Math.sin(totalFrameCount) * idx;
+    //     lights[idx][0] = Math.sin(totalFrameCount) * 30 * idx;
+    //     lights[idx][2] = 3 + Math.cos(totalFrameCount) * 2 * idx;
+    //   })
+    // }
 
     entities.forEach(function(entity, idx) {
       entities[idx] = moveEntity(canvasWidth, canvasWidth, canvasWidth, entity);
     })
 
-
-    // setTimeout(renderLoop, 1);            // Uncomment this line, and comment the next line
-    requestAnimationFrame(nextTick);     // to see how fast this could run...
+    // setTimeout(renderLoop, 1);       
+    requestAnimationFrame(nextTick);    
   }
 
   let moveEntity = (width, height, depth, entity) => {
@@ -185,28 +185,23 @@ var renderer = (gpuKernel: any, cpuKernel: any,
     entity[1] += entity[15];
     entity[2] += entity[16];
     entity[3] += entity[17];
-    let needsReflect = false;
-    var normal;
     if (entity[1] < -4) {
-      normal = [1, 0, 0], needsReflect = true;
+      [entity[15], entity[16], entity[17]] = reflect(entity, [1, 0, 0]);
     }
     if (entity[1] > 4.2) {
-      normal = [-1, 0, 0], needsReflect = true;
+      [entity[15], entity[16], entity[17]] = reflect(entity, [-1, 0, 0]);
     }
     if (entity[2] < 0) {
-      normal = [0, 1, 0], needsReflect = true;
+      [entity[15], entity[16], entity[17]] = reflect(entity, [0, 1, 0]);
     }
     if (entity[2] > 7) {
-      normal = [0, -1, 0], needsReflect = true;
+      [entity[15], entity[16], entity[17]] = reflect(entity, [0, -1, 0]);
     }
     if (entity[3] < -7) {
-      normal = [0, 0, 1], needsReflect = true;
+      [entity[15], entity[16], entity[17]] = reflect(entity, [0, 0, 1]);
     }
     if (entity[3] > 2) {
-      normal = [0, 0, -1], needsReflect = true;
-    }
-    if (needsReflect) {
-      [entity[15], entity[16], entity[17]] = reflect(entity, normal);
+      [entity[15], entity[16], entity[17]] = reflect(entity, [0, 0, -1]);
     }
     return entity;
   }
@@ -329,21 +324,25 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
 
       // Get nearest object
       for (var i = 0; i < this.constants.ENTITY_COUNT; i++) {
+        var distance = -1;
+
+        // Iterate through entity types
         if (entities[i][0] == this.constants.SPHERE) {
-          var distance = sphereIntersection(
+          distance = sphereIntersection(
             entities[i][1], entities[i][2], entities[i][3],
             entities[i][7],
             rayPtX, rayPtY, rayPtZ,
             normRayVecX, normRayVecY, normRayVecZ
           );
+        } else if (entities[i][0] == this.constants.CUBOID) {
+        }
 
-          if (distance >= 0 && distance < nearestEntityDistance) {
-            nearestEntityIndex = i;
-            nearestEntityDistance = distance;
-            red = entities[i][8];
-            green = entities[i][9];
-            blue = entities[i][10];
-          }
+        if (distance >= 0 && distance < nearestEntityDistance) {
+          nearestEntityIndex = i;
+          nearestEntityDistance = distance;
+          red = entities[i][8];
+          green = entities[i][9];
+          blue = entities[i][10];
         }
       }
 
@@ -370,7 +369,7 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
 
         // Lambertian reflection
 
-        var lambertRed, lambertGreen, lambertBlue;
+        var lambertRed = 0, lambertGreen = 0, lambertBlue = 0;
 
         for (var i = 0; i < this.constants.LIGHT_COUNT; i++) {
           var lightPtX = lights[i][0];
@@ -396,8 +395,8 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
                 vecToLightX, vecToLightY, vecToLightZ
               );
 
-              if (distance > -0.005) { 
-                shadowCast = 1; 
+              if (distance > -0.005) {
+                shadowCast = 1;
               }
             }
           }
@@ -413,9 +412,9 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
           }
 
           lambertAmount = Math.min(1, lambertAmount);
-          lambertRed = entityRed * lambertAmount * entityLambert;
-          lambertGreen = entityGreen * lambertAmount * entityLambert;
-          lambertBlue = entityBlue * lambertAmount * entityLambert;
+          lambertRed += entityRed * lambertAmount * entityLambert;
+          lambertGreen += entityGreen * lambertAmount * entityLambert;
+          lambertBlue += entityBlue * lambertAmount * entityLambert;
         }
 
         // End Lambertian reflection
@@ -454,7 +453,7 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
                 entities[i][1], entities[i][2], entities[i][3],
                 entities[i][7],
                 reflectedPtX, reflectedPtY, reflectedPtZ,
-                reflectedVecX, reflectedVecY, reflectedVecZ 
+                reflectedVecX, reflectedVecY, reflectedVecZ
               );
 
               if (distance >= 0 && distance < nearestEntityDistance) {
@@ -487,14 +486,20 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
             incidentRayVecZ = reflectedVecZ;
 
             depth += 1;
+
           } else {
+
             depth = depthLimit;
+
           }
         }
 
-        this.color(lambertRed + specularRed, lambertGreen + specularGreen, lambertBlue + specularBlue);
+        this.color(
+          lambertRed + specularRed,
+          lambertGreen + specularGreen,
+          lambertBlue + specularBlue
+        );
       }
-
 
     }, opt);
 }
