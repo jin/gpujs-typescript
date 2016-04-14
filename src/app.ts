@@ -30,6 +30,8 @@ let benchmark = (elem: HTMLInputElement) : void => {
   elem.value = "Running..";
   bm.startBenchmark(stringOfMode(mode), () => {
     elem.value = "Benchmark";
+    var resultsElem = document.getElementById("results");
+    bm.displayResults(resultsElem);
   });
 }
 
@@ -248,7 +250,7 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
 
   const opt: KernelOptions = {
     mode: stringOfMode(mode),
-    dimensions: [800, 600],
+    dimensions: [scene.canvasWidth, scene.canvasHeight],
     debug: false,
     graphical: true,
     safeTextureReadHack: false,

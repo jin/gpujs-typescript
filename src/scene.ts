@@ -84,7 +84,7 @@ namespace Scene {
 
   let generateRandomSpheres  = (count: number) : Entity.Opts[] => {
     let ary = [];
-    let minDirection = -0.07, maxDirection = 0.07;
+    let minDirection = -0.09, maxDirection = 0.09;
     for (let i = 0; i < count; i++) {
       ary.push(
         {
@@ -120,7 +120,7 @@ namespace Scene {
 
   // let opts: Entity.Opts[] = sphere_opts.concat(generateRandomSpheres(2));
   let opts: Entity.Opts[] = 
-    generateRandomSpheres(parseInt(rand(5, 5)))
+    generateRandomSpheres(parseInt(rand(3, 3)))
     .concat(light_opts);
 
   let entities: number[][] = opts.map(function(opt) {
@@ -133,7 +133,7 @@ namespace Scene {
   let vpUp = vecNormalize(vecCrossProduct(vpRight, eyeVector));
 
   let canvasHeight = 600;
-  let canvasWidth = 800;
+  let canvasWidth = 600;
 
   let fieldOfViewRadians = Math.PI * (camera[6] / 2) / 180;
   let heightWidthRatio = canvasHeight / canvasWidth;

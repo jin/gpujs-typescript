@@ -12,13 +12,19 @@
       }
 
       .flex-container div.left-col {
-        padding-left: 10px;
-        width: 30%;
+        margin-left: 10px;
+        margin-right: 10px;
+        width: 40%;
       }
 
       .flex-container div.right-col {
-        padding-right: 10px;
-        width: 70%;
+        margin-left: 10px;
+        margin-right: 10px;
+        width: 60%;
+      }
+
+      ul {
+        list-style: none;
       }
     </style>
   </head>
@@ -41,6 +47,7 @@
         <p>
           <input type="button" value="Benchmark" onclick="benchmark(this)" />
         </p>
+        <div id="results"></div>
       </div>
       <div class="right-col" id="canvas">
       </div>
