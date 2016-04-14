@@ -4,24 +4,47 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
     <title>GPU.js Raytracer</title>
+    <style type="text/css" media="all">
+      .flex-container {
+        display: -ms-flex;
+        display: -webkit-flex;
+        display: flex;
+      }
+
+      .flex-container div.left-col {
+        padding-left: 10px;
+        width: 30%;
+      }
+
+      .flex-container div.right-col {
+        padding-right: 10px;
+        width: 70%;
+      }
+    </style>
   </head>
   <body>
-    <p>A parallel raytracer built with TypeScript and <a href="http://gpu.rocks">GPU.js</a> (WebGL/GLSL).</p>
+    <div class="flex-container">
+      <div class="left-col">
+        <p>A parallel raytracer built with TypeScript and <a href="http://gpu.rocks">GPU.js</a> (WebGL/GLSL).</p>
 
-    <p>WASD to move around.</p>
+        <p>WASD to move around.</p>
 
-    <p>
-      Current mode: <span id="mode">GPU</span>
-      <input type="button" value="Switch mode" onclick="toggleMode()" />
-    </p>
-    <p>
-      FPS: <span id="fps">Loading..</span>
-      <input type="button" value="Pause" onclick="togglePause(this)" />
-    </p>
+        <p>
+          Current mode: <span id="mode">GPU</span>
+          <input type="button" value="Switch mode" onclick="toggleMode()" />
+        </p>
+        <p>
+          FPS: <span id="fps">Loading..</span>
+          <input type="button" value="Pause" onclick="togglePause(this)" />
+        </p>
 
-    <p>
-      <input type="button" value="Benchmark speedup" onclick="benchmark()" />
-    </p>
+        <p>
+          <input type="button" value="Benchmark" onclick="benchmark(this)" />
+        </p>
+      </div>
+      <div class="right-col" id="canvas">
+      </div>
+    </div>
 
     <script type="text/javascript" charset="utf-8">
       if (window.location.hash) {
@@ -34,6 +57,6 @@
         }
       }
     </script>
-    <script src="lib/app.js" type="text/javascript" charset="utf-8" async></script>
+    <script src="lib/app.js?nocache" type="text/javascript" charset="utf-8" async></script>
   </body>
 </html>

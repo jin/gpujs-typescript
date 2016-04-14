@@ -2,11 +2,10 @@
 
 enum Mode { GPU, CPU }
 
-var hash = hash || "GPU"
-
 // Global states
-var isRunning = true;
+var hash = hash || "GPU" // derived from window object
 var mode = (hash == "GPU") ? Mode.GPU : Mode.CPU;
+var isRunning = true;
 
 let stringOfMode = (mode: Mode) : string => {
   switch(mode) {
@@ -18,7 +17,6 @@ let stringOfMode = (mode: Mode) : string => {
 let togglePause = (el: HTMLInputElement) : void => {
   el.value = isRunning ? "Start" : "Pause";
   isRunning = !isRunning;
-  // renderLoop = renderer(gpuKernel, cpuKernel, gpuCanvas, cpuCanvas, scene);
   if (isRunning) { renderLoop() };
 }
 
@@ -27,17 +25,12 @@ let toggleMode = () : void => {
   location.reload();
 }
 
-let benchmark = () : void => {
-  let duration = 1000;
-  setTimeout(() => {
-    console.log("Test GPU");
-    setTimeout(() => {
-      console.log("Test CPU");
-      setTimeout(() => {
-        console.log("Compare results");
-      }, 1000);
-    }, duration);
-  }, duration);
+let bm = new Benchmark.Benchmark();
+let benchmark = (elem: HTMLInputElement) : void => {
+  elem.value = "Running..";
+  bm.startBenchmark(stringOfMode(mode), () => {
+    elem.value = "Benchmark";
+  });
 }
 
 var renderer = (gpuKernel: any, cpuKernel: any,
@@ -127,8 +120,12 @@ var renderer = (gpuKernel: any, cpuKernel: any,
 
   let nextTick = () : void => {
     if (!isRunning) { return; } // Pause render loop if not running
-
-    updateFPS(fps.getFPS());
+    var startTime, endTime;
+    if (bm.isBenchmarking) { 
+      startTime = performance.now(); 
+    } else {
+      updateFPS(fps.getFPS());
+    }
 
     if (mode == Mode.CPU) {
       cpuKernel(
@@ -192,8 +189,15 @@ var renderer = (gpuKernel: any, cpuKernel: any,
       entities[idx] = moveEntity(canvasWidth, canvasWidth, canvasWidth, entity);
     })
 
-    // setTimeout(renderLoop, 1);       
-    requestAnimationFrame(nextTick);    
+    if (bm.isBenchmarking) { 
+      endTime = performance.now(); 
+      let timeTaken = endTime - startTime;
+      bm.addFrameGenDuration(timeTaken);
+      bm.incrementTotalFrameCount();
+      setTimeout(renderLoop, 5);       
+    } else {
+      requestAnimationFrame(nextTick);    
+    }
   }
 
   let moveEntity = (width, height, depth, entity) => {
@@ -206,13 +210,13 @@ var renderer = (gpuKernel: any, cpuKernel: any,
     entity[1] += entity[15];
     entity[2] += entity[16];
     entity[3] += entity[17];
-    if (entity[1] < -4) {
+    if (entity[1] < -7) {
       [entity[15], entity[16], entity[17]] = reflect(entity, [1, 0, 0]);
     }
-    if (entity[1] > 4.2) {
+    if (entity[1] > 7) {
       [entity[15], entity[16], entity[17]] = reflect(entity, [-1, 0, 0]);
     }
-    if (entity[2] < 0) {
+    if (entity[2] < -7) {
       [entity[15], entity[16], entity[17]] = reflect(entity, [0, 1, 0]);
     }
     if (entity[2] > 7) {
@@ -221,11 +225,12 @@ var renderer = (gpuKernel: any, cpuKernel: any,
     if (entity[3] < -7) {
       [entity[15], entity[16], entity[17]] = reflect(entity, [0, 0, 1]);
     }
-    if (entity[3] > 2) {
+    if (entity[3] > 7) {
       [entity[15], entity[16], entity[17]] = reflect(entity, [0, 0, -1]);
     }
     return entity;
   }
+
 
   return nextTick;
 }
@@ -244,7 +249,7 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
   const opt: KernelOptions = {
     mode: stringOfMode(mode),
     dimensions: [800, 600],
-    debug: true,
+    debug: false,
     graphical: true,
     safeTextureReadHack: false,
     constants: {
@@ -531,8 +536,8 @@ var cpuKernel = createKernel(Mode.CPU, scene);
 var cpuCanvas = cpuKernel.getCanvas();
 var gpuCanvas = gpuKernel.getCanvas();
 
-document.getElementsByTagName('body')[0].appendChild(gpuCanvas);
-document.getElementsByTagName('body')[0].appendChild(cpuCanvas);
+document.getElementById('canvas').appendChild(gpuCanvas);
+document.getElementById('canvas').appendChild(cpuCanvas);
 
 var renderLoop = renderer(gpuKernel, cpuKernel, gpuCanvas, cpuCanvas, scene);
 window.onload = renderLoop;

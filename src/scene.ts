@@ -9,7 +9,7 @@ namespace Scene {
 
   let camera: Camera = [
     0, 0, 25,  // x,y,z coordinates idx 0, 1, 2
-    0, 3, 0,      // Direction normal vector idx 3, 4, 5
+    0, 0, 24,      // Direction normal vector idx 3, 4, 5
     45            // Field of view. idx 6
   ];
 
@@ -17,24 +17,31 @@ namespace Scene {
     {
       entityType: Entity.Type.SPHERE,
       red: 1, green: 1, blue: 1,
-      x: -5, y: 3, z: 4, radius: 0.1,
+      x: -5, y: 0, z: 4, radius: 0.1,
       specularReflection: 0.0, lambertianReflection: 1, ambientColor: 0.1, opacity: 1.0,
       directionX: 0, directionY: 0, directionZ: 0
     },
     // {
     //   entityType: Entity.Type.SPHERE,
     //   red: 1, green: 1, blue: 1,
-    //   x: 0, y: 6, z: 10, radius: 0.1,
+    //   x: 0, y: 0, z: 10, radius: 0.1,
     //   specularReflection: 0.2, lambertianReflection: 1, ambientColor: 0.1, opacity: 1.0,
     //   directionX: 0, directionY: 0, directionZ: 0
     // },
     {
       entityType: Entity.Type.SPHERE,
       red: 1, green: 1, blue: 1,
-      x: 5, y: 3, z: 4, radius: 0.1,
+      x: 5, y: 0, z: 4, radius: 0.1,
       specularReflection: 0.0, lambertianReflection: 1, ambientColor: 0.1, opacity: 1.0,
       directionX: 0, directionY: 0, directionZ: 0
-    }
+    },
+    {
+      entityType: Entity.Type.SPHERE,
+      red: 1, green: 1, blue: 1,
+      x: 0, y: -2, z: 0, radius: 0.1,
+      specularReflection: 0.2, lambertianReflection: 1, ambientColor: 0.1, opacity: 1.0,
+      directionX: 0, directionY: 0, directionZ: 0
+    },
   ];
 
   let lights: number[][] = light_opts.map(light => {
