@@ -132,8 +132,8 @@ namespace Scene {
   let vpRight = vecNormalize(vecCrossProduct(eyeVector, upVector));
   let vpUp = vecNormalize(vecCrossProduct(vpRight, eyeVector));
 
-  let canvasHeight = 600;
-  let canvasWidth = 600;
+  let canvasHeight = 640;
+  let canvasWidth = 640;
 
   let fieldOfViewRadians = Math.PI * (camera[6] / 2) / 180;
   let heightWidthRatio = canvasHeight / canvasWidth;

@@ -9,7 +9,7 @@ namespace Benchmark {
 
     constructor() {
       this.mode = "";
-      this.benchmarkDuration = 3000;
+      this.benchmarkDuration = 5000;
       this.resetBenchmark();
     }
 
@@ -61,9 +61,9 @@ namespace Benchmark {
         <li> Time elapsed (ms): ${this.getResults().actualBenchmarkDuration} </li>
         <li> Total frames rendered: ${this.getResults().totalFrameCount} </li>
         <li> Average FPS: ${this.getResults().averageFPS} </li>
-        <li> Frame render time (max): ${this.getResults().maxFrameRenderDuration} </li>
-        <li> Frame render time (min): ${this.getResults().minFrameRenderDuration} </li>
-        <li> Frame render time (avg): ${this.getResults().avgFrameRenderDuration} </li>
+        <li> Frame render time - max (ms): ${this.getResults().maxFrameRenderDuration} </li>
+        <li> Frame render time - min (ms): ${this.getResults().minFrameRenderDuration} </li>
+        <li> Frame render time - avg (ms): ${this.getResults().avgFrameRenderDuration} </li>
       </ul>
       ${elem.innerHTML}
       `;

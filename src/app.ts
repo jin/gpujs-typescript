@@ -3,8 +3,7 @@
 enum Mode { GPU, CPU }
 
 // Global states
-var hash = hash || "GPU" // derived from window object
-var mode = (hash == "GPU") ? Mode.GPU : Mode.CPU;
+var mode = Mode.GPU // initial mode
 var isRunning = true;
 
 let stringOfMode = (mode: Mode) : string => {
@@ -14,6 +13,8 @@ let stringOfMode = (mode: Mode) : string => {
   }
 }
 
+// DOM bindings
+
 let togglePause = (el: HTMLInputElement) : void => {
   el.value = isRunning ? "Start" : "Pause";
   isRunning = !isRunning;
@@ -21,13 +22,19 @@ let togglePause = (el: HTMLInputElement) : void => {
 }
 
 let toggleMode = () : void => {
-  window.location.hash = (mode == Mode.GPU) ? "CPU" : "GPU"
-  location.reload();
+  mode = (mode == Mode.GPU) ? Mode.CPU : Mode.GPU;
+  document.getElementById('mode').innerHTML = stringOfMode(mode).toUpperCase();
+}
+
+let updateFPS = (fps: string) : void => {
+  var f = document.querySelector("#fps");
+  f.innerHTML = fps.toString();
 }
 
 let bm = new Benchmark.Benchmark();
 let benchmark = (elem: HTMLInputElement) : void => {
   elem.value = "Running..";
+  updateFPS("Maximum rate!")
   bm.startBenchmark(stringOfMode(mode), () => {
     elem.value = "Benchmark";
     var resultsElem = document.getElementById("results");
@@ -35,9 +42,10 @@ let benchmark = (elem: HTMLInputElement) : void => {
   });
 }
 
+// Main renderer
+
 var renderer = (gpuKernel: any, cpuKernel: any,
-                gpuCanvas: any, cpuCanvas: any, 
-                scene: Scene.Scene) : () => void => {
+                gpuCanvas: any, scene: Scene.Scene) : () => void => {
 
   enum Movement {
     Forward, Backward, LeftStrafe, RightStrafe,
@@ -115,21 +123,17 @@ var renderer = (gpuKernel: any, cpuKernel: any,
     }
   };
 
-  let updateFPS = (fps: any) : void => {
-    var f = document.querySelector("#fps");
-    f.innerHTML = fps.toString();
-  }
-
   let nextTick = () : void => {
     if (!isRunning) { return; } // Pause render loop if not running
-    var startTime, endTime;
-    if (bm.isBenchmarking) { 
-      startTime = performance.now(); 
-    } else {
-      updateFPS(fps.getFPS());
+    if (!bm.isBenchmarking) {
+      // Don't update FPS while benchmarking
+      updateFPS(fps.getFPS().toString());
     }
 
+    var startTime, endTime;
     if (mode == Mode.CPU) {
+      console.log("cpu")
+      if (bm.isBenchmarking) { startTime = performance.now(); }
       cpuKernel(
         camera,
         lights,
@@ -148,11 +152,13 @@ var renderer = (gpuKernel: any, cpuKernel: any,
         pixelWidth,
         pixelHeight
       );
+      if (bm.isBenchmarking) { endTime = performance.now(); }
       var cv = document.getElementsByTagName("canvas")[0];
       let bdy = cv.parentNode;
-      let newCanvas = gpuKernel.getCanvas();
+      let newCanvas = cpuKernel.getCanvas();
       bdy.replaceChild(newCanvas, cv);
     } else {
+      if (bm.isBenchmarking) { startTime = performance.now(); }
       gpuKernel(
         camera,
         lights,
@@ -171,6 +177,7 @@ var renderer = (gpuKernel: any, cpuKernel: any,
         pixelWidth,
         pixelHeight
       );
+      if (bm.isBenchmarking) { endTime = performance.now(); }
       var cv = document.getElementsByTagName("canvas")[0];
       let bdy = cv.parentNode;
       let newCanvas = gpuKernel.getCanvas();
@@ -192,7 +199,6 @@ var renderer = (gpuKernel: any, cpuKernel: any,
     })
 
     if (bm.isBenchmarking) { 
-      endTime = performance.now(); 
       let timeTaken = endTime - startTime;
       bm.addFrameGenDuration(timeTaken);
       bm.incrementTotalFrameCount();
@@ -535,11 +541,9 @@ let scene = Scene.scene;
 var gpuKernel = createKernel(Mode.GPU, scene);
 var cpuKernel = createKernel(Mode.CPU, scene);
 
-var cpuCanvas = cpuKernel.getCanvas();
-var gpuCanvas = gpuKernel.getCanvas();
+var canvas = gpuKernel.getCanvas();
 
-document.getElementById('canvas').appendChild(gpuCanvas);
-document.getElementById('canvas').appendChild(cpuCanvas);
+document.getElementById('canvas').appendChild(canvas);
 
-var renderLoop = renderer(gpuKernel, cpuKernel, gpuCanvas, cpuCanvas, scene);
+var renderLoop = renderer(gpuKernel, cpuKernel, canvas, scene);
 window.onload = renderLoop;

@@ -24,6 +24,7 @@
       }
 
       ul {
+        padding-left: 10px;
         list-style: none;
       }
     </style>
@@ -52,18 +53,6 @@
       <div class="right-col" id="canvas">
       </div>
     </div>
-
-    <script type="text/javascript" charset="utf-8">
-      if (window.location.hash) {
-        retrievedHash = window.location.hash.substring(1);
-        if (retrievedHash == "GPU" || retrievedHash === "CPU") {
-          document.getElementById("mode").innerHTML = retrievedHash;
-          window.hash = retrievedHash;
-        } else {
-          window.hash = "GPU";
-        }
-      }
-    </script>
     <script src="lib/app.js?nocache" type="text/javascript" charset="utf-8" async></script>
   </body>
 </html>
