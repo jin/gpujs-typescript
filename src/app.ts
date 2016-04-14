@@ -34,11 +34,18 @@ let updateFPS = (fps: string) : void => {
 let bm = new Benchmark.Benchmark();
 let benchmark = (elem: HTMLInputElement) : void => {
   elem.value = "Running..";
+  let resultsElem = document.getElementById("results");
+  let speedupElem = document.getElementById("speedup");
   updateFPS("Maximum rate!")
   bm.startBenchmark(stringOfMode(mode), () => {
-    elem.value = "Benchmark";
-    var resultsElem = document.getElementById("results");
     bm.displayResults(resultsElem);
+    toggleMode() // toggle to other mode
+    bm.startBenchmark(stringOfMode(mode), () => {
+      bm.displayResults(resultsElem);
+      toggleMode() // toggle back to original mode
+      elem.value = "Benchmark";
+      bm.displaySpeedup(speedupElem);
+    })
   });
 }
 
@@ -130,61 +137,37 @@ var renderer = (gpuKernel: any, cpuKernel: any,
       updateFPS(fps.getFPS().toString());
     }
 
-    var startTime, endTime;
+    var cv = document.getElementsByTagName("canvas")[0];
+    var startTime, endTime, bdy, newCanvas;
     if (mode == Mode.CPU) {
-      console.log("cpu")
       if (bm.isBenchmarking) { startTime = performance.now(); }
       cpuKernel(
-        camera,
-        lights,
-        entities,
-        eyeVector,
-        vpRight,
-        vpUp,
-        canvasHeight,
-        canvasWidth,
-        fovRadians,
-        heightWidthRatio,
-        halfWidth,
-        halfHeight,
-        cameraWidth,
-        cameraHeight,
-        pixelWidth,
+        camera, lights, entities,
+        eyeVector, vpRight, vpUp,
+        canvasHeight, canvasWidth, fovRadians,
+        heightWidthRatio, halfWidth, halfHeight,
+        cameraWidth, cameraHeight, pixelWidth,
         pixelHeight
       );
       if (bm.isBenchmarking) { endTime = performance.now(); }
-      var cv = document.getElementsByTagName("canvas")[0];
-      let bdy = cv.parentNode;
-      let newCanvas = cpuKernel.getCanvas();
-      bdy.replaceChild(newCanvas, cv);
+      bdy = cv.parentNode;
+      newCanvas = cpuKernel.getCanvas();
+      if (!bm.isBenchmarking) { bdy.replaceChild(newCanvas, cv); }
     } else {
       if (bm.isBenchmarking) { startTime = performance.now(); }
       gpuKernel(
-        camera,
-        lights,
-        entities,
-        eyeVector,
-        vpRight,
-        vpUp,
-        canvasHeight,
-        canvasWidth,
-        fovRadians,
-        heightWidthRatio,
-        halfWidth,
-        halfHeight,
-        cameraWidth,
-        cameraHeight,
-        pixelWidth,
-        pixelHeight
+        camera, lights, entities,
+        eyeVector, vpRight, vpUp,
+        canvasHeight, canvasWidth, fovRadians,
+        heightWidthRatio, halfWidth, halfHeight,
+        cameraWidth, cameraHeight,
+        pixelWidth, pixelHeight
       );
       if (bm.isBenchmarking) { endTime = performance.now(); }
-      var cv = document.getElementsByTagName("canvas")[0];
-      let bdy = cv.parentNode;
-      let newCanvas = gpuKernel.getCanvas();
+      bdy = cv.parentNode;
+      newCanvas = gpuKernel.getCanvas();
       bdy.replaceChild(newCanvas, cv);
     }
-
-    var totalFrameCount = fps.totalFrameCount;
 
     // if (totalFrameCount % 6 == 0) {
     //   lights.forEach(function(light, idx) {
@@ -198,13 +181,13 @@ var renderer = (gpuKernel: any, cpuKernel: any,
       entities[idx] = moveEntity(canvasWidth, canvasWidth, canvasWidth, entity);
     })
 
-    if (bm.isBenchmarking) { 
+    if (bm.isBenchmarking) {
       let timeTaken = endTime - startTime;
       bm.addFrameGenDuration(timeTaken);
       bm.incrementTotalFrameCount();
-      setTimeout(renderLoop, 5);       
+      setTimeout(renderLoop, 5);
     } else {
-      requestAnimationFrame(nextTick);    
+      requestAnimationFrame(nextTick);
     }
   }
 

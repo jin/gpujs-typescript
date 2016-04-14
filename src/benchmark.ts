@@ -3,8 +3,8 @@ namespace Benchmark {
   export class Benchmark {
 
     isBenchmarking: boolean
-    latestResults: Result 
-    benchmarkDuration: number 
+    latestResults: Result
+    benchmarkDuration: number
     mode: string
 
     constructor() {
@@ -28,12 +28,11 @@ namespace Benchmark {
       this.setMode(mode);
 
       this.isBenchmarking = true;
-      let startTime = performance.now(), endTime;
       setTimeout(() => {
         this.stopBenchmark();
 
-        let timeTaken = performance.now() - startTime;
-        this.latestResults.actualBenchmarkDuration = timeTaken;
+        this.latestResults.actualBenchmarkDuration =
+          this.latestResults.frameRenderDurations.reduce((a, b) => a + b);
 
         this.computeMinMaxAvg();
         // Provides a way to continue execution
@@ -55,15 +54,28 @@ namespace Benchmark {
       localStorage.setItem(this.mode, JSON.stringify(this.latestResults));
     }
 
+    displaySpeedup(elem) {
+      let cpuResults = JSON.parse(localStorage.getItem('cpu'));
+      let gpuResults = JSON.parse(localStorage.getItem('gpu'));
+      let avgSpeedup = cpuResults.avgFrameRenderDuration / gpuResults.avgFrameRenderDuration;
+      let minSpeedup = cpuResults.minFrameRenderDuration / gpuResults.minFrameRenderDuration;
+      elem.innerHTML = `Speedups:
+      <ul>
+      <li>(avg frame render time): x${avgSpeedup}</li>
+      <li>(min frame render time): x${minSpeedup}</li>
+      </ul>`;
+    }
+
     displayResults(elem) {
       elem.innerHTML = `
       <ul>
-        <li> Time elapsed (ms): ${this.getResults().actualBenchmarkDuration} </li>
-        <li> Total frames rendered: ${this.getResults().totalFrameCount} </li>
-        <li> Average FPS: ${this.getResults().averageFPS} </li>
-        <li> Frame render time - max (ms): ${this.getResults().maxFrameRenderDuration} </li>
-        <li> Frame render time - min (ms): ${this.getResults().minFrameRenderDuration} </li>
-        <li> Frame render time - avg (ms): ${this.getResults().avgFrameRenderDuration} </li>
+      <li> Mode: ${this.getResults().mode} </li>
+      <li> Time elapsed (ms): ${this.getResults().actualBenchmarkDuration} </li>
+      <li> Total frames rendered: ${this.getResults().totalFrameCount} </li>
+      <li> Average FPS: ${this.getResults().averageFPS} </li>
+      <li> Frame render time - max (ms): ${this.getResults().maxFrameRenderDuration} </li>
+      <li> Frame render time - min (ms): ${this.getResults().minFrameRenderDuration} </li>
+      <li> Frame render time - avg (ms): ${this.getResults().avgFrameRenderDuration} </li>
       </ul>
       ${elem.innerHTML}
       `;
