@@ -441,7 +441,7 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
         var reflectedPtY = intersectPtY;
         var reflectedPtZ = intersectPtZ;
 
-        var depthLimit = 3;
+        var depthLimit = 2;
         var depth = 0;
 
         var entitySpecular = entities[nearestEntityIndex][13];

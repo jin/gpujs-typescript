@@ -4,6 +4,7 @@ namespace Benchmark {
 
     isBenchmarking: boolean
     latestResults: Result
+    resultHistory: Result[]
     benchmarkDuration: number
     mode: string
 
@@ -11,6 +12,7 @@ namespace Benchmark {
       this.mode = "";
       this.benchmarkDuration = 5000;
       this.resetBenchmark();
+      this.resultHistory = [];
     }
 
     resetBenchmark() {
@@ -51,7 +53,9 @@ namespace Benchmark {
     }
 
     saveResults() {
+      this.resultHistory.push(this.latestResults);
       localStorage.setItem(this.mode, JSON.stringify(this.latestResults));
+      localStorage.setItem("history", JSON.stringify(this.resultHistory));
     }
 
     displaySpeedup(elem) {
@@ -62,9 +66,9 @@ namespace Benchmark {
       let medianSpeedup = cpuResults.medianFrameRenderDuration / gpuResults.medianFrameRenderDuration;
       elem.innerHTML = `Speedups:
       <ul>
-      <li>(avg frame render time): x${avgSpeedup}</li>
-      <li>(min frame render time): x${minSpeedup}</li>
-      <li>(median frame render time): x${medianSpeedup}</li>
+      <li>avg frame render (ms): ${avgSpeedup}</li>
+      <li>min frame render (ms): ${minSpeedup}</li>
+      <li>median frame render (ms): ${medianSpeedup}</li>
       </ul>`;
     }
 
