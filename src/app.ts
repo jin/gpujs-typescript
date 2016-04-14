@@ -3,7 +3,7 @@
 enum Mode { GPU, CPU }
 
 // Global states
-var mode = Mode.GPU // initial mode
+var mode = Mode.CPU // initial mode
 var isRunning = true;
 
 let stringOfMode = (mode: Mode) : string => {

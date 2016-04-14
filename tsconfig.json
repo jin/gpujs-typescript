@@ -12,7 +12,6 @@
     "out": "./lib/app.js"
   },
   "files": [
-    "vendor/gpu.js",
     "src/app.ts"
   ]
 }

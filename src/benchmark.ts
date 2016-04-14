@@ -59,10 +59,12 @@ namespace Benchmark {
       let gpuResults = JSON.parse(localStorage.getItem('gpu'));
       let avgSpeedup = cpuResults.avgFrameRenderDuration / gpuResults.avgFrameRenderDuration;
       let minSpeedup = cpuResults.minFrameRenderDuration / gpuResults.minFrameRenderDuration;
+      let medianSpeedup = cpuResults.medianFrameRenderDuration / gpuResults.medianFrameRenderDuration;
       elem.innerHTML = `Speedups:
       <ul>
       <li>(avg frame render time): x${avgSpeedup}</li>
       <li>(min frame render time): x${minSpeedup}</li>
+      <li>(median frame render time): x${medianSpeedup}</li>
       </ul>`;
     }
 
@@ -76,6 +78,7 @@ namespace Benchmark {
       <li> Frame render time - max (ms): ${this.getResults().maxFrameRenderDuration} </li>
       <li> Frame render time - min (ms): ${this.getResults().minFrameRenderDuration} </li>
       <li> Frame render time - avg (ms): ${this.getResults().avgFrameRenderDuration} </li>
+      <li> Frame render time - median (ms): ${this.getResults().medianFrameRenderDuration} </li>
       </ul>
       ${elem.innerHTML}
       `;
@@ -102,6 +105,7 @@ namespace Benchmark {
       this.latestResults.minFrameRenderDuration = this.getMinFrameRenderDuration();
       this.latestResults.maxFrameRenderDuration = this.getMaxFrameRenderDuration();
       this.latestResults.avgFrameRenderDuration = this.getAvgFrameRenderDuration();
+      this.latestResults.medianFrameRenderDuration = this.getMedianFrameRenderDuration();
     }
 
     getAverageFPS() : number {
@@ -116,6 +120,13 @@ namespace Benchmark {
 
     getMaxFrameRenderDuration() : number {
       return Math.max(...this.getResults().frameRenderDurations);
+    }
+
+    getMedianFrameRenderDuration() : number {
+      let count = this.getResults().frameRenderDurations.length;
+      if (count % 2 == 0) { count -= 1; }
+      let median = this.getResults().frameRenderDurations.sort()[Math.floor(count / 2)];
+      return median;
     }
 
     getAvgFrameRenderDuration() : number {
@@ -135,6 +146,7 @@ namespace Benchmark {
     minFrameRenderDuration?: number
     maxFrameRenderDuration?: number
     avgFrameRenderDuration?: number
+    medianFrameRenderDuration?: number
   }
 
 }
