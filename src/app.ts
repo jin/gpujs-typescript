@@ -222,17 +222,17 @@ var renderer = (gpuKernel: any, cpuKernel: any,
 
   let checkSphereSphereCollision = (allSpheres) => {
     for (let first = 0; first < allSpheres.length - 1; first++) {
-      if (allSpheres[first][0] === Entity.Type.LIGHTSPHERE) { continue; }
+      if (allSpheres[first][0] !== Entity.Type.SPHERE) { continue; }
       let sphere = allSpheres[first];
       for (let second = first + 1; second < allSpheres.length; second++){
-        if (allSpheres[second][0] === Entity.Type.LIGHTSPHERE) { continue; }
+        if (allSpheres[second][0] !== Entity.Type.SPHERE) { continue; }
         let other = allSpheres[second];
         let distance = vecMagnitude(vecSubtract(
           [sphere[1], sphere[2], sphere[3]],
           [other[1], other[2], other[3]]
         )) 
         let radiusSum = sphere[7] + other[7];
-        if (distance + (0.05 * distance) < radiusSum) {
+        if (distance < radiusSum + (0.05 * radiusSum)) {
           let basisVector = vecNormalize(vecSubtract(
             [sphere[1], sphere[2], sphere[3]],
             [other[1], other[2], other[3]]
@@ -257,9 +257,9 @@ var renderer = (gpuKernel: any, cpuKernel: any,
               vecScale(v2x, (2 * m2) / (m1 + m2)),
               v1y);
 
-              allSpheres[first][15] = newSphereVelocity[0];
-              allSpheres[first][16] = newSphereVelocity[1];
-              allSpheres[first][17] = newSphereVelocity[2];
+          allSpheres[first][15] = newSphereVelocity[0];
+          allSpheres[first][16] = newSphereVelocity[1];
+          allSpheres[first][17] = newSphereVelocity[2];
 
           let otherSphereVelocity = 
             vecAdd3(
@@ -267,9 +267,14 @@ var renderer = (gpuKernel: any, cpuKernel: any,
               vecScale(v2x, (m2 - m1) / (m1 + m2)),
               v2y);
 
-              allSpheres[second][15] = otherSphereVelocity[0];
-              allSpheres[second][16] = otherSphereVelocity[1];
-              allSpheres[second][17] = otherSphereVelocity[2];
+          allSpheres[second][15] = otherSphereVelocity[0];
+          allSpheres[second][16] = otherSphereVelocity[1];
+          allSpheres[second][17] = otherSphereVelocity[2];
+
+          for (let colIdx = 8; colIdx < 11; colIdx++) {
+            allSpheres[first][colIdx] = rand(0, 1);
+            allSpheres[second][colIdx] = rand(0, 1);
+          }
         } 
       }
     }
@@ -544,7 +549,7 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
         var reflectedPtY = intersectPtY;
         var reflectedPtZ = intersectPtZ;
 
-        var depthLimit = 1;
+        var depthLimit = 3;
         var depth = 0;
 
         var entitySpecular = entities[nearestEntityIndex][13];
