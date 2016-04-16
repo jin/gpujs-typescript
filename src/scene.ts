@@ -8,9 +8,9 @@ namespace Scene {
   type Light = number[];
 
   let camera: Camera = [
-    0, 0, 25,  // x,y,z coordinates idx 0, 1, 2
+    0, 0, 25,      // x,y,z coordinates idx 0, 1, 2
     0, 0, 24,      // Direction normal vector idx 3, 4, 5
-    45            // Field of view. idx 6
+    45             // Field of view. idx 6
   ];
 
   let light_opts = [
@@ -27,7 +27,7 @@ namespace Scene {
       x: 0, y: 7, z: 0, radius: 0.1,
       specularReflection: 0.0, lambertianReflection: 1, ambientColor: 1, opacity: 1.0,
       directionX: 0, directionY: 0, directionZ: 0
-    },
+    }
     // {
     //   entityType: Entity.Type.SPHERE,
     //   red: 1, green: 1, blue: 1,
@@ -76,17 +76,20 @@ namespace Scene {
     }
   ]
 
-  let generateRandomSpheres  = (count: number) : Entity.Opts[] => {
+  let generateRandomSpheres = (count: number) : Entity.Opts[] => {
     let ary = [];
     let minDirection = -0.15, maxDirection = 0.15;
     for (let i = 0; i < count; i++) {
       ary.push(
         {
           entityType: Entity.Type.SPHERE,
-          red: rand(0.1, 0.9), green: rand(0.1, 0.9), blue: rand(0.1, 0.9),
-          x: rand(-4, 4), y: rand(0, 7), z: rand(-7, 2), radius: rand(0.3, 4),
-          specularReflection: rand(0.1, 0.2), lambertianReflection: rand(0.8, 1), ambientColor: rand(0, 0.3), opacity: rand(0, 1),
-          directionX: rand(minDirection, maxDirection), directionY: rand(minDirection, maxDirection), directionZ: rand(minDirection, maxDirection)
+          red: rand(0.05, 0.95), green: rand(0.05, 0.95), blue: rand(0.05, 0.95),
+          x: (i * 3.2) - 7 /* so they don't get stuck */, y: rand(0, 7), z: rand(-7, 2), radius: rand(0.3, 2.8),
+          specularReflection: rand(0.1, 0.2), lambertianReflection: rand(0.8, 1), 
+          ambientColor: rand(0.1, 0.4), opacity: rand(0, 1),
+          directionX: rand(minDirection, maxDirection), 
+          directionY: rand(minDirection, maxDirection), 
+          directionZ: rand(minDirection, maxDirection)
         }
       )
     }
@@ -111,8 +114,6 @@ namespace Scene {
     constant: 28 
   }]
 
-  let sphereCount = parseInt(rand(0, 5));
-  // let opts: Entity.Opts[] = sphere_opts.concat(generateRandomSpheres(2));
   let opts: Entity.Opts[] = 
     generateRandomSpheres(5)
     .concat(light_opts)
@@ -158,23 +159,32 @@ namespace Scene {
     pixelHeight: number
   }
 
-  export let scene = {
-    camera: camera,
-    lights: lights,
-    entities: entities,
-    eyeVector: eyeVector,
-    vpRight: vpRight,
-    vpUp: vpUp,
-    canvasHeight: canvasHeight,
-    canvasWidth: canvasWidth,
-    fovRadians: fieldOfViewRadians,
-    heightWidthRatio: heightWidthRatio,
-    halfWidth: halfWidth,
-    halfHeight: halfHeight,
-    cameraWidth: cameraWidth,
-    cameraHeight: cameraHeight,
-    pixelWidth: pixelWidth,
-    pixelHeight: pixelHeight
+  export let generateScene = () => {
+    return {
+      camera: camera,
+      lights: lights,
+      entities: entities,
+      eyeVector: eyeVector,
+      vpRight: vpRight,
+      vpUp: vpUp,
+      canvasHeight: canvasHeight,
+      canvasWidth: canvasWidth,
+      fovRadians: fieldOfViewRadians,
+      heightWidthRatio: heightWidthRatio,
+      halfWidth: halfWidth,
+      halfHeight: halfHeight,
+      cameraWidth: cameraWidth,
+      cameraHeight: cameraHeight,
+      pixelWidth: pixelWidth,
+      pixelHeight: pixelHeight
+    }
+  } 
+
+  export let updateSphereCount = (count: number) => {
+    opts = generateRandomSpheres(count).concat(light_opts)
+    entities = opts.map(function(opt) {
+      return new Entity.Entity(opt);
+    }).map(ent => ent.toVector());
   }
 
 }

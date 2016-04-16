@@ -2,6 +2,7 @@
 
 enum Mode { GPU, CPU }
 
+var gl = gl || {};
 // Global states
 var mode = Mode.GPU // initial mode
 var canvasNeedsUpdate = true; // replace canvas on initial load
@@ -33,9 +34,21 @@ let updateFPS = (fps: string) : void => {
   f.innerHTML = fps.toString();
 }
 
+let updateSlider = (elem: HTMLInputElement) : void => {
+  isRunning = false;
+  document.getElementById('sphere-count').innerHTML = elem.value;
+  Scene.updateSphereCount(parseInt(elem.value));
+  setTimeout(() => {
+    renderLoop = renderer(gpuKernel, cpuKernel, canvas, Scene.generateScene());
+    canvasNeedsUpdate = true; // signal canvas replacement to renderer
+    isRunning = true;
+    if (isRunning) { renderLoop() };
+  }, 1000)
+}
+
 let bm = new Benchmark.Benchmark();
 let benchmark = (elem: HTMLInputElement) : void => {
-  bm.getResults().sceneData = Scene.scene;
+  bm.getResults().sceneData = Scene.generateScene();
   elem.value = "Running..";
   elem.disabled = true;
   let resultsElem = document.getElementById("results");
@@ -183,9 +196,11 @@ var renderer = (gpuKernel: any, cpuKernel: any,
       }
     }
 
-    entities.forEach(function(entity, idx) {
-      entities[idx] = moveEntity(canvasWidth, canvasWidth, canvasWidth, entity);
-    })
+    for (let idx = 0; idx < entities.length; idx++){
+      entities[idx] = moveEntity(canvasWidth, canvasWidth, canvasWidth, entities[idx]);
+    }
+
+    entities = checkSphereSphereCollision(entities);
 
     // If in benchmarking mode, set a longer timeout delay to 
     // provide a buffer for any overhead.
@@ -203,6 +218,62 @@ var renderer = (gpuKernel: any, cpuKernel: any,
     } else {
       requestAnimationFrame(nextTick);
     }
+  }
+
+  let checkSphereSphereCollision = (allSpheres) => {
+    for (let first = 0; first < allSpheres.length - 1; first++) {
+      if (allSpheres[first][0] === Entity.Type.LIGHTSPHERE) { continue; }
+      let sphere = allSpheres[first];
+      for (let second = first + 1; second < allSpheres.length; second++){
+        if (allSpheres[second][0] === Entity.Type.LIGHTSPHERE) { continue; }
+        let other = allSpheres[second];
+        let distance = vecMagnitude(vecSubtract(
+          [sphere[1], sphere[2], sphere[3]],
+          [other[1], other[2], other[3]]
+        )) 
+        let radiusSum = sphere[7] + other[7];
+        if (distance + (0.05 * distance) < radiusSum) {
+          let basisVector = vecNormalize(vecSubtract(
+            [sphere[1], sphere[2], sphere[3]],
+            [other[1], other[2], other[3]]
+          ))
+
+          let v1 = [sphere[15], sphere[16], sphere[17]];
+          let x1 = vecDotProduct(basisVector, v1);
+          let v1x = vecScale(basisVector, x1);
+          let v1y = vecSubtract(v1, v1x);
+          let m1 = 1;
+
+          basisVector = vecScale(basisVector, -1);
+          let v2 = [other[15], other[16], other[17]];
+          let x2 = vecDotProduct(basisVector, v2);
+          let v2x = vecScale(basisVector, x2);
+          let v2y = vecSubtract(v2, v2x);
+          let m2 = 1;
+
+          let newSphereVelocity = 
+            vecAdd3(
+              vecScale(v1x, (m1 - m2) / (m1 + m2)),
+              vecScale(v2x, (2 * m2) / (m1 + m2)),
+              v1y);
+
+              allSpheres[first][15] = newSphereVelocity[0];
+              allSpheres[first][16] = newSphereVelocity[1];
+              allSpheres[first][17] = newSphereVelocity[2];
+
+          let otherSphereVelocity = 
+            vecAdd3(
+              vecScale(v1x, (2 * m2) / (m1 + m2)),
+              vecScale(v2x, (m2 - m1) / (m1 + m2)),
+              v2y);
+
+              allSpheres[second][15] = otherSphereVelocity[0];
+              allSpheres[second][16] = otherSphereVelocity[1];
+              allSpheres[second][17] = otherSphereVelocity[2];
+        } 
+      }
+    }
+    return allSpheres;
   }
 
   // Function to move a single entity based on its direction
@@ -243,6 +314,7 @@ var renderer = (gpuKernel: any, cpuKernel: any,
     if (entity[3] > 7) {
       [entity[15], entity[16], entity[17]] = reflect(entity, [0, 0, -1]);
     }
+
     return entity;
   }
 
@@ -348,9 +420,9 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
       var normRayVecZ = normalizeZ(rayVecX, rayVecY, rayVecZ);
 
       // default background color
-      var red = 0.10;
-      var green = 0.10;
-      var blue = 0.10;
+      var red = 0.20;
+      var green = 0.20;
+      var blue = 0.20;
 
       var nearestEntityIndex = -1;
       var maxEntityDistance = 2 ** 32; // All numbers in GPU.js are of Float32 type
@@ -552,7 +624,7 @@ var gpu = new GPU();
 addFunctions(gpu, vectorFunctions);
 addFunctions(gpu, utilityFunctions);
 
-let scene = Scene.scene;
+let scene = Scene.generateScene();
 var gpuKernel = createKernel(Mode.GPU, scene);
 var cpuKernel = createKernel(Mode.CPU, scene);
 
