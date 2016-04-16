@@ -3,7 +3,8 @@
 enum Mode { GPU, CPU }
 
 // Global states
-var mode = Mode.CPU // initial mode
+var mode = Mode.GPU // initial mode
+var canvasNeedsUpdate = true; // replace canvas on initial load
 var isRunning = true;
 
 let stringOfMode = (mode: Mode) : string => {
@@ -22,6 +23,7 @@ let togglePause = (el: HTMLInputElement) : void => {
 }
 
 let toggleMode = () : void => {
+  canvasNeedsUpdate = true; // signal canvas replacement to renderer
   mode = (mode == Mode.GPU) ? Mode.CPU : Mode.GPU;
   document.getElementById('mode').innerHTML = stringOfMode(mode).toUpperCase();
 }
@@ -33,10 +35,12 @@ let updateFPS = (fps: string) : void => {
 
 let bm = new Benchmark.Benchmark();
 let benchmark = (elem: HTMLInputElement) : void => {
+  bm.getResults().sceneData = Scene.scene;
   elem.value = "Running..";
+  elem.disabled = true;
   let resultsElem = document.getElementById("results");
   let speedupElem = document.getElementById("speedup");
-  updateFPS("Maximum rate!")
+  updateFPS("Benchmarking..")
   bm.startBenchmark(stringOfMode(mode), () => {
     bm.displayResults(resultsElem);
     toggleMode() // toggle to other mode
@@ -44,6 +48,7 @@ let benchmark = (elem: HTMLInputElement) : void => {
       bm.displayResults(resultsElem);
       toggleMode() // toggle back to original mode
       elem.value = "Benchmark";
+      elem.disabled = false;
       bm.displaySpeedup(speedupElem);
     })
   });
@@ -137,8 +142,7 @@ var renderer = (gpuKernel: any, cpuKernel: any,
       updateFPS(fps.getFPS().toString());
     }
 
-    var cv = document.getElementsByTagName("canvas")[0];
-    var startTime, endTime, bdy, newCanvas;
+    var startTime, endTime;
     if (mode == Mode.CPU) {
       if (bm.isBenchmarking) { startTime = performance.now(); }
       cpuKernel(
@@ -150,9 +154,15 @@ var renderer = (gpuKernel: any, cpuKernel: any,
         pixelHeight
       );
       if (bm.isBenchmarking) { endTime = performance.now(); }
-      bdy = cv.parentNode;
-      newCanvas = cpuKernel.getCanvas();
-      if (!bm.isBenchmarking) { bdy.replaceChild(newCanvas, cv); }
+      if (canvasNeedsUpdate) { 
+        // Do not waste cycles replacing the canvas
+        // if the mode did not change.
+        canvasNeedsUpdate = false;
+        let cv = document.getElementsByTagName("canvas")[0];
+        let bdy = cv.parentNode;
+        let newCanvas = cpuKernel.getCanvas();
+        bdy.replaceChild(newCanvas, cv); 
+      }
     } else {
       if (bm.isBenchmarking) { startTime = performance.now(); }
       gpuKernel(
@@ -164,33 +174,47 @@ var renderer = (gpuKernel: any, cpuKernel: any,
         pixelWidth, pixelHeight
       );
       if (bm.isBenchmarking) { endTime = performance.now(); }
-      bdy = cv.parentNode;
-      newCanvas = gpuKernel.getCanvas();
-      bdy.replaceChild(newCanvas, cv);
+      if (canvasNeedsUpdate) {
+        canvasNeedsUpdate = false;
+        let cv = document.getElementsByTagName("canvas")[0];
+        let bdy = cv.parentNode;
+        let newCanvas = gpuKernel.getCanvas();
+        bdy.replaceChild(newCanvas, cv); 
+      }
     }
-
-    // if (totalFrameCount % 6 == 0) {
-    //   lights.forEach(function(light, idx) {
-    //     // lights[idx][1] = Math.sin(totalFrameCount) * idx;
-    //     lights[idx][0] = Math.sin(totalFrameCount) * 30 * idx;
-    //     lights[idx][2] = 3 + Math.cos(totalFrameCount) * 2 * idx;
-    //   })
-    // }
 
     entities.forEach(function(entity, idx) {
       entities[idx] = moveEntity(canvasWidth, canvasWidth, canvasWidth, entity);
     })
 
+    // If in benchmarking mode, set a longer timeout delay to 
+    // provide a buffer for any overhead.
+    // 
+    // Since we are measuring the raw time taken to render a 
+    // single frame, we should not render the next frame
+    // as fast as possible as this might incur unneeded 
+    // processor cycles and starve the actual benchmark 
+    // requirements. 
     if (bm.isBenchmarking) {
       let timeTaken = endTime - startTime;
       bm.addFrameGenDuration(timeTaken);
       bm.incrementTotalFrameCount();
-      setTimeout(renderLoop, 5);
+      setTimeout(renderLoop, 300);
     } else {
       requestAnimationFrame(nextTick);
     }
   }
 
+  // Function to move a single entity based on its direction
+  // properties.
+  //
+  // Currently, we represent both velocity and direction
+  // in a single property (directionX/Y/Z), but we should
+  // really break them out into their own properties and
+  // calculate at runtime. Acceleration is not supported.
+  //
+  // The entities will also bounce off an imaginary boundary
+  // when intersected.
   let moveEntity = (width, height, depth, entity) => {
     let reflect = (entity, normal) => {
       let incidentVec = [entity[15], entity[16], entity[17]];
@@ -213,7 +237,7 @@ var renderer = (gpuKernel: any, cpuKernel: any,
     if (entity[2] > 7) {
       [entity[15], entity[16], entity[17]] = reflect(entity, [0, -1, 0]);
     }
-    if (entity[3] < -7) {
+    if (entity[3] < -15) {
       [entity[15], entity[16], entity[17]] = reflect(entity, [0, 0, 1]);
     }
     if (entity[3] > 7) {
@@ -221,7 +245,6 @@ var renderer = (gpuKernel: any, cpuKernel: any,
     }
     return entity;
   }
-
 
   return nextTick;
 }
@@ -251,7 +274,9 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
       CUBOID: Entity.Type.CUBOID,
       CYLINDER: Entity.Type.CYLINDER,
       CONE: Entity.Type.CONE,
-      TRIANGLE: Entity.Type.TRIANGLE
+      TRIANGLE: Entity.Type.TRIANGLE,
+      PLANE: Entity.Type.PLANE,
+      LIGHTSPHERE: Entity.Type.LIGHTSPHERE
     }
   };
 
@@ -274,6 +299,7 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
     pixelHeight: number) {
 
       // Kernel canary code
+      // If any of these breaks, something is _really_ wrong.
       var x1 = addX(1, 2, 3, 4, 5, 6);
       var x2 = addY(1, 2, 3, 4, 5, 6);
       var x3 = addZ(1, 2, 3, 4, 5, 6);
@@ -296,9 +322,7 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
       var x20 = add3Z(1, 2, 3, 4, 5, 6, 7, 8, 9);
       var x21 = sphereIntersection(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 
-      // Start by creating a simple vector pointing in the direction the camera is
-
-      // raytracer start
+      // Raytracer start!
 
       var x = this.thread.x;
       var y = this.thread.y;
@@ -324,9 +348,9 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
       var normRayVecZ = normalizeZ(rayVecX, rayVecY, rayVecZ);
 
       // default background color
-      var red = 0.05;
-      var green = 0.05;
-      var blue = 0.05;
+      var red = 0.10;
+      var green = 0.10;
+      var blue = 0.10;
 
       var nearestEntityIndex = -1;
       var maxEntityDistance = 2 ** 32; // All numbers in GPU.js are of Float32 type
@@ -335,16 +359,24 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
       // Get nearest object
       for (var i = 0; i < this.constants.ENTITY_COUNT; i++) {
         var distance = -1;
+        var entityType = entities[i][0];
 
         // Iterate through entity types
-        if (entities[i][0] == this.constants.SPHERE) {
+        if (entityType == this.constants.SPHERE ||
+           entityType == this.constants.LIGHTSPHERE) {
           distance = sphereIntersection(
             entities[i][1], entities[i][2], entities[i][3],
             entities[i][7],
             rayPtX, rayPtY, rayPtZ,
             normRayVecX, normRayVecY, normRayVecZ
           );
-        } else if (entities[i][0] == this.constants.CUBOID) {
+        } else if (entityType == this.constants.PLANE) {
+          distance = planeIntersection(
+            entities[i][1], entities[i][2], entities[i][3],
+            entities[i][18],
+            rayPtX, rayPtY, rayPtZ,
+            normRayVecX, normRayVecY, normRayVecZ
+          )
         }
 
         if (distance >= 0 && distance < nearestEntityDistance) {
@@ -386,9 +418,9 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
           var lightPtY = lights[i][1];
           var lightPtZ = lights[i][2];
 
-          var vecToLightX = -sphereNormalX(intersectPtX, intersectPtY, intersectPtZ, lightPtX, lightPtY, lightPtZ);
-          var vecToLightY = -sphereNormalY(intersectPtX, intersectPtY, intersectPtZ, lightPtX, lightPtY, lightPtZ);
-          var vecToLightZ = -sphereNormalZ(intersectPtX, intersectPtY, intersectPtZ, lightPtX, lightPtY, lightPtZ);
+          var vecToLightX = sphereNormalX(intersectPtX, intersectPtY, intersectPtZ, lightPtX, lightPtY, lightPtZ);
+          var vecToLightY = sphereNormalY(intersectPtX, intersectPtY, intersectPtZ, lightPtX, lightPtY, lightPtZ);
+          var vecToLightZ = sphereNormalZ(intersectPtX, intersectPtY, intersectPtZ, lightPtX, lightPtY, lightPtZ);
 
           var shadowCast = -1;
 
@@ -408,26 +440,25 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
               if (distance > -0.005) {
                 shadowCast = 1;
               }
+
             }
           }
 
-          if (shadowCast > 0) {
+          if (shadowCast < 0) {
             var contribution = dotProduct(
-              -vecToLightX, -vecToLightY, -vecToLightZ,
+              vecToLightX, vecToLightY, vecToLightZ,
               sphereNormPtX, sphereNormPtY, sphereNormPtZ
             );
             if (contribution > 0) {
               lambertAmount += contribution;
             }
-          }
+          } 
 
           lambertAmount = Math.min(1, lambertAmount);
           lambertRed += entityRed * lambertAmount * entityLambert;
           lambertGreen += entityGreen * lambertAmount * entityLambert;
           lambertBlue += entityBlue * lambertAmount * entityLambert;
         }
-
-        // End Lambertian reflection
 
         // Specular reflection
 
@@ -441,7 +472,7 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
         var reflectedPtY = intersectPtY;
         var reflectedPtZ = intersectPtZ;
 
-        var depthLimit = 2;
+        var depthLimit = 1;
         var depth = 0;
 
         var entitySpecular = entities[nearestEntityIndex][13];
@@ -504,10 +535,11 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
           }
         }
 
+        var ambient = entities[nearestEntityIndex][14];
         this.color(
-          lambertRed + specularRed,
-          lambertGreen + specularGreen,
-          lambertBlue + specularBlue
+          lambertRed + (lambertRed * specularRed) + entityRed * ambient,
+          lambertGreen + (lambertGreen * specularGreen) + entityGreen * ambient,
+          lambertBlue + (lambertBlue * specularBlue) + entityBlue * ambient
         );
       }
 

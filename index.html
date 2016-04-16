@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width">
     <title>GPU.js Raytracer</title>
     <style type="text/css" media="all">
+
       .flex-container {
         display: -ms-flex;
         display: -webkit-flex;
@@ -27,6 +28,7 @@
         padding-left: 10px;
         list-style: none;
       }
+
     </style>
   </head>
   <body>
@@ -37,7 +39,7 @@
         <p>WASD to move around.</p>
 
         <p>
-          Current mode: <span id="mode">CPU</span>
+          Current mode: <span id="mode">GPU</span>
           <input type="button" value="Switch mode" onclick="toggleMode()" />
         </p>
         <p>
@@ -46,7 +48,8 @@
         </p>
 
         <p>
-          Benchmarking - compare the performance of the parallelized GPU and sequential CPU kernels. <br />
+          Benchmark the performance of the parallelized GPU and sequential CPU kernels.
+          This will render 30 frames each and compute min, max, median frame rendering durations, and speedups. <br />
           <input type="button" value="Benchmark" onclick="benchmark(this)" />
         </p>
         <div id="speedup"></div>

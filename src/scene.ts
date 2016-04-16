@@ -14,38 +14,32 @@ namespace Scene {
   ];
 
   let light_opts = [
+    // {
+    //   entityType: Entity.Type.SPHERE,
+    //   red: 1, green: 1, blue: 1,
+    //   x: -7, y: 6, z: 4, radius: 0.3,
+    //   specularReflection: 0.0, lambertianReflection: 1, ambientColor: 0.1, opacity: 1.0,
+    //   directionX: 0, directionY: 0, directionZ: 0
+    // },
     {
-      entityType: Entity.Type.SPHERE,
+      entityType: Entity.Type.LIGHTSPHERE,
       red: 1, green: 1, blue: 1,
-      x: -5, y: 0, z: 4, radius: 0.1,
-      specularReflection: 0.0, lambertianReflection: 1, ambientColor: 0.1, opacity: 1.0,
+      x: 0, y: 7, z: 0, radius: 0.1,
+      specularReflection: 0.0, lambertianReflection: 1, ambientColor: 1, opacity: 1.0,
       directionX: 0, directionY: 0, directionZ: 0
     },
     // {
     //   entityType: Entity.Type.SPHERE,
     //   red: 1, green: 1, blue: 1,
-    //   x: 0, y: 0, z: 10, radius: 0.1,
+    //   x: 0, y: -7, z: 3, radius: 0.3,
     //   specularReflection: 0.2, lambertianReflection: 1, ambientColor: 0.1, opacity: 1.0,
     //   directionX: 0, directionY: 0, directionZ: 0
     // },
-    {
-      entityType: Entity.Type.SPHERE,
-      red: 1, green: 1, blue: 1,
-      x: 5, y: 0, z: 4, radius: 0.1,
-      specularReflection: 0.0, lambertianReflection: 1, ambientColor: 0.1, opacity: 1.0,
-      directionX: 0, directionY: 0, directionZ: 0
-    },
-    {
-      entityType: Entity.Type.SPHERE,
-      red: 1, green: 1, blue: 1,
-      x: 0, y: -2, z: 0, radius: 0.1,
-      specularReflection: 0.2, lambertianReflection: 1, ambientColor: 0.1, opacity: 1.0,
-      directionX: 0, directionY: 0, directionZ: 0
-    },
   ];
 
+  // fake light entity
   let lights: number[][] = light_opts.map(light => {
-    return [light.x, light.y, light.z + 1, light.red, light.green, light.blue];
+    return [light.x, light.y + 0.5, light.z, light.red, light.green, light.blue];
   })
 
   let sphere_opts: Entity.Opts[] = [
@@ -84,14 +78,14 @@ namespace Scene {
 
   let generateRandomSpheres  = (count: number) : Entity.Opts[] => {
     let ary = [];
-    let minDirection = -0.09, maxDirection = 0.09;
+    let minDirection = -0.15, maxDirection = 0.15;
     for (let i = 0; i < count; i++) {
       ary.push(
         {
           entityType: Entity.Type.SPHERE,
           red: rand(0.1, 0.9), green: rand(0.1, 0.9), blue: rand(0.1, 0.9),
-          x: rand(-4, 4), y: rand(0, 7), z: rand(-7, 2), radius: rand(0.3, 2),
-          specularReflection: rand(0.1, 0.2), lambertianReflection: rand(0.8, 1), ambientColor: rand(0, 1), opacity: rand(0, 1),
+          x: rand(-4, 4), y: rand(0, 7), z: rand(-7, 2), radius: rand(0.3, 4),
+          specularReflection: rand(0.1, 0.2), lambertianReflection: rand(0.8, 1), ambientColor: rand(0, 0.3), opacity: rand(0, 1),
           directionX: rand(minDirection, maxDirection), directionY: rand(minDirection, maxDirection), directionZ: rand(minDirection, maxDirection)
         }
       )
@@ -99,29 +93,30 @@ namespace Scene {
     return ary;
   }
 
-  let cylinder_opts: Entity.Opts = {
-    entityType: Entity.Type.CYLINDER,
-    red: 0.3,
+  let plane_opts: Entity.Opts[] = [{
+    entityType: Entity.Type.PLANE,
+    red: 1.0,
     green: 1.0,
-    blue: 0.6,
-    x: 100,
-    y: 100,
-    z: 100,
-    radius: 80,
-    height: 200,
-    specularReflection: 0.2,
-    lambertianReflection: 0.7,
-    ambientColor: 0.5,
+    blue: 1.0,
+    x: 0, // normal vector x
+    y: 3, // normal vector y
+    z: 0, // normal vector z
+    specularReflection: 0,
+    lambertianReflection: 1,
+    ambientColor: 0.2,
     opacity: 1.0,
     directionX: 0,
     directionY: 0,
-    directionZ: 0
-  }
+    directionZ: 0,
+    constant: 28 
+  }]
 
+  let sphereCount = parseInt(rand(0, 5));
   // let opts: Entity.Opts[] = sphere_opts.concat(generateRandomSpheres(2));
   let opts: Entity.Opts[] = 
-    generateRandomSpheres(parseInt(rand(3, 3)))
-    .concat(light_opts);
+    generateRandomSpheres(5)
+    .concat(light_opts)
+    // .concat(plane_opts);
 
   let entities: number[][] = opts.map(function(opt) {
     return new Entity.Entity(opt);

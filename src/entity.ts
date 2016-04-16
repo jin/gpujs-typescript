@@ -1,6 +1,6 @@
 namespace Entity {
 
-  export enum Type { EMPTY, SPHERE, CUBOID, CYLINDER, CONE, TRIANGLE }
+  export enum Type { EMPTY, SPHERE, CUBOID, CYLINDER, CONE, TRIANGLE, PLANE, LIGHTSPHERE }
 
   export interface Opts {
     entityType: Type,
@@ -20,7 +20,8 @@ namespace Entity {
     ambientColor: number, // 0 to 1
     directionX: number,
     directionY: number,
-    directionZ: number
+    directionZ: number,
+    constant?: number // for Plane
   }
 
   export class Entity {
@@ -43,6 +44,7 @@ namespace Entity {
     directionX: number
     directionY: number
     directionZ: number
+    constant: number
 
     constructor(opts: Opts) {
       this.entityType = opts.entityType;
@@ -64,6 +66,7 @@ namespace Entity {
       this.directionX = opts.directionX || 0;
       this.directionY = opts.directionY || 0;
       this.directionZ = opts.directionZ || 0;
+      this.constant = opts.constant     || 0;
     }
 
     toVector() : number[] {
@@ -85,7 +88,8 @@ namespace Entity {
         this.ambientColor,         // 14
         this.directionX,           // 15
         this.directionY,           // 16
-        this.directionZ            // 17
+        this.directionZ,           // 17
+        this.constant              // 18
       ];
 
       return array;

@@ -62,18 +62,19 @@ function vecNormalize(a: number[]) : number[] {
   return vecScale(a, 1 / mag);
 }
 
+// We ignore cases of magnitude == 0
 function normalizeX(x1, x2, x3) {
-  var mag = Math.sqrt(x1 * x1 + x2 * x2 + x3 * x3);
+  var mag = magnitude(x1, x2, x3);
   return scaleX(x1, x2, x3, 1 / mag);
 }
 
 function normalizeY(x1, x2, x3) {
-  var mag = Math.sqrt(x1 * x1 + x2 * x2 + x3 * x3);
+  var mag = magnitude(x1, x2, x3);
   return scaleY(x1, x2, x3, 1 / mag);
 }
 
 function normalizeZ(x1, x2, x3) {
-  var mag = Math.sqrt(x1 * x1 + x2 * x2 + x3 * x3);
+  var mag = magnitude(x1, x2, x3);
   return scaleZ(x1, x2, x3, 1 / mag);
 }
 
@@ -141,8 +142,8 @@ function sphereIntersection(spherePtX, spherePtY, spherePtZ, sphereRadius, rayPt
   var eyeToCenterX = spherePtX - rayPtX;
   var eyeToCenterY = spherePtY - rayPtY;
   var eyeToCenterZ = spherePtZ - rayPtZ;
-  var sideLength = eyeToCenterX * rayVecX + eyeToCenterY * rayVecY + eyeToCenterZ * rayVecZ;
-  var cameraToCenterLength = eyeToCenterX * eyeToCenterX + eyeToCenterY * eyeToCenterY + eyeToCenterZ * eyeToCenterZ;
+  var sideLength = dotProduct(eyeToCenterX, eyeToCenterY, eyeToCenterZ, rayVecX, rayVecY, rayVecZ);
+  var cameraToCenterLength = dotProduct(eyeToCenterX, eyeToCenterY, eyeToCenterZ, eyeToCenterX, eyeToCenterY, eyeToCenterZ);
   var discriminant = (sphereRadius * sphereRadius) - cameraToCenterLength + (sideLength * sideLength);
   if (discriminant < 0) {
     return -1;
@@ -155,42 +156,55 @@ function sphereNormalX(spherePtX, spherePtY, spherePtZ, surfacePtX, surfacePtY, 
   var x = surfacePtX - spherePtX,
     y = surfacePtY - spherePtY,
     z = surfacePtZ - spherePtZ;
-  var mag = Math.sqrt(x * x + y * y + z * z);
-  return x * (1 / mag);
+  return x * (1 / magnitude(x, y, z));
 }
 
 function sphereNormalY(spherePtX, spherePtY, spherePtZ, surfacePtX, surfacePtY, surfacePtZ) {
   var x = surfacePtX - spherePtX,
     y = surfacePtY - spherePtY,
     z = surfacePtZ - spherePtZ;
-  var mag = Math.sqrt(x * x + y * y + z * z);
-  return y * (1 / mag);
+  return y * (1 / magnitude(x, y, z));
 }
 
 function sphereNormalZ(spherePtX, spherePtY, spherePtZ, surfacePtX, surfacePtY, surfacePtZ) {
   var x = surfacePtX - spherePtX,
     y = surfacePtY - spherePtY,
     z = surfacePtZ - spherePtZ;
-  var mag = Math.sqrt(x * x + y * y + z * z);
-  return z * (1 / mag);
+  return z * (1 / magnitude(x, y, z));
 }
 
 function reflectVecX(incidentVecX, incidentVecY, incidentVecZ, normalVecX, normalVecY, normalVecZ) {
-  var scaleFactor = incidentVecX * normalVecX + incidentVecY * normalVecY + incidentVecZ * normalVecZ;
+  var scaleFactor = dotProduct(incidentVecX, incidentVecY, incidentVecZ, normalVecX, normalVecY, normalVecZ);
   var normalVecXScaled = normalVecX * scaleFactor * 2;
   return normalVecXScaled - incidentVecX;
 }
 
 function reflectVecY(incidentVecX, incidentVecY, incidentVecZ, normalVecX, normalVecY, normalVecZ) {
-  var scaleFactor = incidentVecX * normalVecX + incidentVecY * normalVecY + incidentVecZ * normalVecZ;
+  var scaleFactor = dotProduct(incidentVecX, incidentVecY, incidentVecZ, normalVecX, normalVecY, normalVecZ);
   var normalVecYScaled = normalVecY * scaleFactor * 2;
   return normalVecYScaled - incidentVecY;
 }
 
 function reflectVecZ(incidentVecX, incidentVecY, incidentVecZ, normalVecX, normalVecY, normalVecZ) {
-  var scaleFactor = incidentVecX * normalVecX + incidentVecY * normalVecY + incidentVecZ * normalVecZ;
+  var scaleFactor = dotProduct(incidentVecX, incidentVecY, incidentVecZ, normalVecX, normalVecY, normalVecZ);
   var normalVecZScaled = normalVecZ * scaleFactor * 2;
   return normalVecZScaled - incidentVecZ;
+}
+
+function planeIntersection(normalVecX, normalVecY, normalVecZ, distance, rayPtX, rayPtY, rayPtZ, rayVecX, rayVecY, rayVecZ): number {
+
+  var denom = dotProduct(rayVecX, rayVecY, rayVecZ, normalVecX, normalVecY, normalVecZ);
+
+  if (denom !== 0) {
+    var t = -(distance + (rayPtX * normalVecX + rayPtY * normalVecY + rayPtZ * normalVecZ)) / denom;
+    if (t < 0) {
+      return -1;
+    } else {
+      return t;
+    }
+  } else {
+    return -1;
+  }
 }
 
 // let x = 300, y = 300;
@@ -236,5 +250,6 @@ let vectorFunctions = [
   dotProduct,
   sphereIntersection,
   sphereNormalX, sphereNormalY, sphereNormalZ,
-  reflectVecX, reflectVecY, reflectVecZ
+  reflectVecX, reflectVecY, reflectVecZ,
+  planeIntersection
 ];
