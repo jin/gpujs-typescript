@@ -44,8 +44,8 @@ let updateFPS = (fps: string) : void => {
 //   document.getElementById('sphere-count').innerHTML = elem.value;
 //   Scene.updateSphereCount(parseInt(elem.value));
 //   setTimeout(() => {
-//     renderLoop = renderer(gpuKernel, cpuKernel, canvas, Scene.generateScene());
-//     canvasNeedsUpdate = true; // signal canvas replacement to renderer
+//     renderLoop = renderer(gpuKernel, cpuKernel, canvas0, Scene.generateScene());
+//     canvasNeedsUpdate = true; // signal canvas0 replacement to renderer
 //     isRunning = true;
 //     if (isRunning) { renderLoop() };
 //   }, 1000)
@@ -98,8 +98,7 @@ let benchmark = (elem: HTMLInputElement) : void => {
 }
 
 // Main renderer
-var renderer = (gpuKernel: any, cpuKernel: any,
-                gpuCanvas: any, scene: Scene.Scene) : () => void => {
+var renderer = (gpuKernels: any[], cpuKernel: any, scene: Scene.Scene) : () => void => {
 
   let camera = scene.camera,
     lights = scene.lights,
@@ -190,7 +189,7 @@ var renderer = (gpuKernel: any, cpuKernel: any,
       );
       if (bm.isBenchmarking) { endTime = performance.now(); }
       if (canvasNeedsUpdate) {
-        // Do not waste cycles replacing the canvas
+        // Do not waste cycles replacing the canvas0
         // if the mode did not change.
         canvasNeedsUpdate = false;
         let cv = document.getElementsByTagName("canvas")[0];
@@ -199,22 +198,26 @@ var renderer = (gpuKernel: any, cpuKernel: any,
         bdy.replaceChild(newCanvas, cv);
       }
     } else {
-      if (bm.isBenchmarking) { startTime = performance.now(); }
-      gpuKernel(
-        camera, lights, entities,
-        eyeVector, vpRight, vpUp,
-        canvasHeight, canvasWidth, fovRadians,
-        heightWidthRatio, halfWidth, halfHeight,
-        cameraWidth, cameraHeight,
-        pixelWidth, pixelHeight
-      );
-      if (bm.isBenchmarking) { endTime = performance.now(); }
-      if (canvasNeedsUpdate) {
-        canvasNeedsUpdate = false;
-        let cv = document.getElementsByTagName("canvas")[0];
-        let bdy = cv.parentNode;
-        let newCanvas = gpuKernel.getCanvas();
-        bdy.replaceChild(newCanvas, cv);
+      for (let i = 0; i < gpuKernels.length; i++) {
+        let gpuKernel = gpuKernels[i];
+        if (bm.isBenchmarking) { startTime = performance.now(); }
+        gpuKernel(
+          camera, lights, entities,
+          eyeVector, vpRight, vpUp,
+          canvasHeight, canvasWidth, fovRadians,
+          heightWidthRatio, halfWidth, halfHeight,
+          cameraWidth, cameraHeight,
+          pixelWidth, pixelHeight,
+          i % 2, Math.floor(i / 2)
+        );
+        if (bm.isBenchmarking) { endTime = performance.now(); }
+        if (canvasNeedsUpdate) {
+          canvasNeedsUpdate = false;
+          let cv = document.getElementById("canvas" + i).childNodes[0];
+          let bdy = cv.parentNode;
+          let newCanvas = gpuKernel.getCanvas();
+          bdy.replaceChild(newCanvas, cv);
+        }
       }
     }
 
@@ -390,7 +393,7 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
 
   const opt: KernelOptions = {
     mode: stringOfMode(mode),
-    dimensions: [scene.canvasWidth, scene.canvasHeight],
+    dimensions: [scene.canvasWidth / 2, scene.canvasHeight / 2],
     debug: false,
     graphical: true,
     safeTextureReadHack: false,
@@ -419,7 +422,9 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
     cameraWidth: number,
     cameraHeight: number,
     pixelWidth: number,
-    pixelHeight: number) {
+    pixelHeight: number,
+    xOffset: number,
+    yOffset: number) {
 
       // Kernel canary code
       //
@@ -451,8 +456,8 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
 
       // Raytracer start!
 
-      var x = this.thread.x;
-      var y = this.thread.y;
+      var x = this.thread.x + (320 * xOffset);
+      var y = this.thread.y + (320 * yOffset);
 
       var xCompX = vpRight[0] * (x * pixelWidth - halfWidth);
       var xCompY = vpRight[1] * (x * pixelWidth - halfWidth);
@@ -681,13 +686,19 @@ addFunctions(gpu, utilityFunctions);
 
 let scene = Scene.generateScene();
 var gpuKernel = createKernel(Mode.GPU, scene);
+var gpuKernel1 = createKernel(Mode.GPU, scene);
+var gpuKernel2 = createKernel(Mode.GPU, scene);
+var gpuKernel3 = createKernel(Mode.GPU, scene);
 var cpuKernel = createKernel(Mode.CPU, scene);
 
-var canvas = gpuKernel.getCanvas();
+document.getElementById('canvas0').appendChild(gpuKernel.getCanvas());
+document.getElementById('canvas1').appendChild(gpuKernel1.getCanvas());
+document.getElementById('canvas2').appendChild(gpuKernel2.getCanvas());
+document.getElementById('canvas3').appendChild(gpuKernel3.getCanvas());
 
-document.getElementById('canvas').appendChild(canvas);
-
-var renderLoop = renderer(gpuKernel, cpuKernel, canvas, scene);
+var renderLoop = function() { 
+  return renderer([gpuKernel, gpuKernel1, gpuKernel2, gpuKernel3], cpuKernel, scene);
+}();
 window.onload = renderLoop;
 
 // var testKernel = gpu.createKernel(function(x) {
