@@ -70,9 +70,13 @@ namespace Benchmark {
       let medianSpeedup = cpuResults.medianFrameRenderDuration / gpuResults.medianFrameRenderDuration;
       elem.innerHTML = `Speedups:
       <ul>
-      <li>Min frame render speedup: ${minSpeedup}</li>
-      <li>Median frame render speedup: ${medianSpeedup}</li>
+        <li>${minSpeedup} ${medianSpeedup}</li>
       </ul>`;
+      // elem.innerHTML = `Speedups:
+      // <ul>
+      // <li>Min frame render speedup: ${minSpeedup}</li>
+      // <li>Median frame render speedup: ${medianSpeedup}</li>
+      // </ul>`;
     }
 
     displayResults(elem) {

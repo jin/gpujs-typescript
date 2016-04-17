@@ -84,7 +84,7 @@ namespace Scene {
         {
           entityType: Entity.Type.SPHERE,
           red: rand(0.05, 0.95), green: rand(0.05, 0.95), blue: rand(0.05, 0.95),
-          x: (i * 3.2) - 7 /* so they don't get stuck */, y: rand(0, 7), z: rand(-7, 2), radius: rand(0.3, 2.8),
+          x: rand(-7, 7) /* so they don't get stuck */, y: rand(0, 7), z: rand(-7, 2), radius: rand(0.3, 2.8),
           specularReflection: rand(0.1, 0.2), lambertianReflection: rand(0.8, 1), 
           ambientColor: rand(0.1, 0.4), opacity: rand(0, 1),
           directionX: rand(minDirection, maxDirection), 
@@ -115,7 +115,7 @@ namespace Scene {
   }]
 
   let opts: Entity.Opts[] = 
-    generateRandomSpheres(5)
+    generateRandomSpheres(4)
     .concat(light_opts)
     // .concat(plane_opts);
 

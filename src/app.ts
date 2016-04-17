@@ -1,11 +1,17 @@
 /// <reference path="references.ts" />
 
+// At any point in time, the mode is either GPU or CPU.
 enum Mode { GPU, CPU }
 
-var gl = gl || {};
 // Global states
-var mode = Mode.GPU // initial mode
-var canvasNeedsUpdate = true; // replace canvas on initial load
+var mode = Mode.GPU // Initial mode
+
+// Mostly used when switching between modes, since
+// the CPU and GPU kernel has canvases with different
+// rendering contexts (WebGL v.s. 2D)
+var canvasNeedsUpdate = true;
+
+// Pause or resume the rendering
 var isRunning = true;
 
 let stringOfMode = (mode: Mode) : string => {
@@ -15,8 +21,7 @@ let stringOfMode = (mode: Mode) : string => {
   }
 }
 
-// DOM bindings
-
+// HTML DOM JavaScript bindings
 let togglePause = (el: HTMLInputElement) : void => {
   el.value = isRunning ? "Start" : "Pause";
   isRunning = !isRunning;
@@ -34,48 +39,67 @@ let updateFPS = (fps: string) : void => {
   f.innerHTML = fps.toString();
 }
 
-let updateSlider = (elem: HTMLInputElement) : void => {
-  isRunning = false;
-  document.getElementById('sphere-count').innerHTML = elem.value;
-  Scene.updateSphereCount(parseInt(elem.value));
-  setTimeout(() => {
-    renderLoop = renderer(gpuKernel, cpuKernel, canvas, Scene.generateScene());
-    canvasNeedsUpdate = true; // signal canvas replacement to renderer
-    isRunning = true;
-    if (isRunning) { renderLoop() };
-  }, 1000)
-}
+// let updateSlider = (elem: HTMLInputElement) : void => {
+//   isRunning = false;
+//   document.getElementById('sphere-count').innerHTML = elem.value;
+//   Scene.updateSphereCount(parseInt(elem.value));
+//   setTimeout(() => {
+//     renderLoop = renderer(gpuKernel, cpuKernel, canvas, Scene.generateScene());
+//     canvasNeedsUpdate = true; // signal canvas replacement to renderer
+//     isRunning = true;
+//     if (isRunning) { renderLoop() };
+//   }, 1000)
+// }
 
+// Benchmarking binding.
+//
+// All benchmark logic is encapsulated
+// in the Benchmark.Benchmark class.
+//
+// This method will trigger the renderer
+// to render 30 frames regardless of the current
+// mode, capture the data, and do the same for the
+// other mode.
+//
+// Once both modes are completed, the speedup is
+// computed from the results.
+//
+// The same scene is used for both benchmarks.
 let bm = new Benchmark.Benchmark();
+
 let benchmark = (elem: HTMLInputElement) : void => {
-  bm.getResults().sceneData = Scene.generateScene();
+
   elem.value = "Running..";
   elem.disabled = true;
   let resultsElem = document.getElementById("results");
   let speedupElem = document.getElementById("speedup");
+
   updateFPS("Benchmarking..")
+
+  // Benchmark current mode
   bm.startBenchmark(stringOfMode(mode), () => {
+
     bm.displayResults(resultsElem);
-    toggleMode() // toggle to other mode
+    toggleMode()
+
+    // Benchmark the other mode
     bm.startBenchmark(stringOfMode(mode), () => {
+
       bm.displayResults(resultsElem);
-      toggleMode() // toggle back to original mode
+      bm.displaySpeedup(speedupElem);
+
+      toggleMode() // Toggle back to original mode
+
       elem.value = "Benchmark";
       elem.disabled = false;
-      bm.displaySpeedup(speedupElem);
+
     })
   });
 }
 
 // Main renderer
-
 var renderer = (gpuKernel: any, cpuKernel: any,
                 gpuCanvas: any, scene: Scene.Scene) : () => void => {
-
-  enum Movement {
-    Forward, Backward, LeftStrafe, RightStrafe,
-    LookUp, LookDown, LookLeft, LookRight
-  }
 
   let camera = scene.camera,
     lights = scene.lights,
@@ -94,16 +118,16 @@ var renderer = (gpuKernel: any, cpuKernel: any,
     pixelWidth = scene.pixelWidth,
     pixelHeight = scene.pixelHeight;
 
-  document.onkeydown = function (e) {
+
+  // Basic first-person movement is supported with the W, A, S, D keys.
+  enum Movement { Forward, Backward, LeftStrafe, RightStrafe }
+
+  document.onkeydown = function(e) {
     let keyMap = {
       87: Movement.Forward,
       83: Movement.Backward,
       65: Movement.LeftStrafe,
       68: Movement.RightStrafe,
-      38: Movement.LookUp,
-      40: Movement.LookDown,
-      37: Movement.LookLeft,
-      39: Movement.LookRight
     }
 
     let forwardSpeed = 0.2;
@@ -113,17 +137,15 @@ var renderer = (gpuKernel: any, cpuKernel: any,
     switch (keyMap[e.keyCode]) {
       case Movement.Forward:
         camera[2] -= forwardSpeed;
-      break;
+        break;
       case Movement.Backward:
         camera[2] += backwardSpeed;
-      break;
+        break;
       case Movement.LeftStrafe:
         camera[0] -= strafeSpeed;
-      break;
+        break;
       case Movement.RightStrafe:
         camera[0] += strafeSpeed;
-      break;
-      case Movement.LookLeft:
         break;
       default:
         break;
@@ -167,14 +189,14 @@ var renderer = (gpuKernel: any, cpuKernel: any,
         pixelHeight
       );
       if (bm.isBenchmarking) { endTime = performance.now(); }
-      if (canvasNeedsUpdate) { 
+      if (canvasNeedsUpdate) {
         // Do not waste cycles replacing the canvas
         // if the mode did not change.
         canvasNeedsUpdate = false;
         let cv = document.getElementsByTagName("canvas")[0];
         let bdy = cv.parentNode;
         let newCanvas = cpuKernel.getCanvas();
-        bdy.replaceChild(newCanvas, cv); 
+        bdy.replaceChild(newCanvas, cv);
       }
     } else {
       if (bm.isBenchmarking) { startTime = performance.now(); }
@@ -192,7 +214,7 @@ var renderer = (gpuKernel: any, cpuKernel: any,
         let cv = document.getElementsByTagName("canvas")[0];
         let bdy = cv.parentNode;
         let newCanvas = gpuKernel.getCanvas();
-        bdy.replaceChild(newCanvas, cv); 
+        bdy.replaceChild(newCanvas, cv);
       }
     }
 
@@ -202,14 +224,14 @@ var renderer = (gpuKernel: any, cpuKernel: any,
 
     entities = checkSphereSphereCollision(entities);
 
-    // If in benchmarking mode, set a longer timeout delay to 
+    // If in benchmarking mode, set a longer timeout delay to
     // provide a buffer for any overhead.
-    // 
-    // Since we are measuring the raw time taken to render a 
+    //
+    // Since we are measuring the raw time taken to render a
     // single frame, we should not render the next frame
-    // as fast as possible as this might incur unneeded 
-    // processor cycles and starve the actual benchmark 
-    // requirements. 
+    // as fast as possible as this might incur unneeded
+    // processor cycles and starve the actual benchmark
+    // requirements.
     if (bm.isBenchmarking) {
       let timeTaken = endTime - startTime;
       bm.addFrameGenDuration(timeTaken);
@@ -220,19 +242,38 @@ var renderer = (gpuKernel: any, cpuKernel: any,
     }
   }
 
-  let checkSphereSphereCollision = (allSpheres) => {
-    for (let first = 0; first < allSpheres.length - 1; first++) {
-      if (allSpheres[first][0] !== Entity.Type.SPHERE) { continue; }
-      let sphere = allSpheres[first];
-      for (let second = first + 1; second < allSpheres.length; second++){
-        if (allSpheres[second][0] !== Entity.Type.SPHERE) { continue; }
-        let other = allSpheres[second];
+  // This method detects collisions between any two SPHERE objects
+  // and causes a velocity change if so.
+  //
+  // It ignores non-sphere entities.
+  let checkSphereSphereCollision = (allEntities) => {
+    for (let first = 0; first < allEntities.length - 1; first++) {
+
+      if (allEntities[first][0] !== Entity.Type.SPHERE) { continue; }
+
+      // Get first sphere
+      let sphere = allEntities[first];
+
+      for (let second = first + 1; second < allEntities.length; second++){
+
+        if (allEntities[second][0] !== Entity.Type.SPHERE) { continue; }
+        
+        // Get the other sphere
+        let other = allEntities[second];
+
+        // Check if the distance between the two spheres is 
+        // roughly less than the sum of their radii. If it is,
+        // they've collided.
         let distance = vecMagnitude(vecSubtract(
           [sphere[1], sphere[2], sphere[3]],
           [other[1], other[2], other[3]]
-        )) 
+        ))
+
         let radiusSum = sphere[7] + other[7];
+
         if (distance < radiusSum + (0.05 * radiusSum)) {
+          // Sphere velocity reflection
+          
           let basisVector = vecNormalize(vecSubtract(
             [sphere[1], sphere[2], sphere[3]],
             [other[1], other[2], other[3]]
@@ -242,7 +283,7 @@ var renderer = (gpuKernel: any, cpuKernel: any,
           let x1 = vecDotProduct(basisVector, v1);
           let v1x = vecScale(basisVector, x1);
           let v1y = vecSubtract(v1, v1x);
-          let m1 = 1;
+          let m1 = 1; // Since our entities are massless, we set it to 1 for all.
 
           basisVector = vecScale(basisVector, -1);
           let v2 = [other[15], other[16], other[17]];
@@ -251,34 +292,38 @@ var renderer = (gpuKernel: any, cpuKernel: any,
           let v2y = vecSubtract(v2, v2x);
           let m2 = 1;
 
-          let newSphereVelocity = 
+          let newSphereVelocity =
             vecAdd3(
               vecScale(v1x, (m1 - m2) / (m1 + m2)),
               vecScale(v2x, (2 * m2) / (m1 + m2)),
               v1y);
 
-          allSpheres[first][15] = newSphereVelocity[0];
-          allSpheres[first][16] = newSphereVelocity[1];
-          allSpheres[first][17] = newSphereVelocity[2];
+          // Update new velocity!
+          allEntities[first][15] = newSphereVelocity[0];
+          allEntities[first][16] = newSphereVelocity[1];
+          allEntities[first][17] = newSphereVelocity[2];
 
-          let otherSphereVelocity = 
+          let otherSphereVelocity =
             vecAdd3(
               vecScale(v1x, (2 * m2) / (m1 + m2)),
               vecScale(v2x, (m2 - m1) / (m1 + m2)),
               v2y);
 
-          allSpheres[second][15] = otherSphereVelocity[0];
-          allSpheres[second][16] = otherSphereVelocity[1];
-          allSpheres[second][17] = otherSphereVelocity[2];
+          allEntities[second][15] = otherSphereVelocity[0];
+          allEntities[second][16] = otherSphereVelocity[1];
+          allEntities[second][17] = otherSphereVelocity[2];
 
+          // Just for fun. When the spheres collide,
+          // we change their colors randomly.
           for (let colIdx = 8; colIdx < 11; colIdx++) {
-            allSpheres[first][colIdx] = rand(0, 1);
-            allSpheres[second][colIdx] = rand(0, 1);
+            allEntities[first][colIdx] = rand(0, 1);
+            allEntities[second][colIdx] = rand(0, 1);
           }
-        } 
+        }
       }
     }
-    return allSpheres;
+
+    return allEntities;
   }
 
   // Function to move a single entity based on its direction
@@ -302,21 +347,27 @@ var renderer = (gpuKernel: any, cpuKernel: any,
     entity[2] += entity[16];
     entity[3] += entity[17];
     if (entity[1] < -7) {
+      // Left wall
       [entity[15], entity[16], entity[17]] = reflect(entity, [1, 0, 0]);
     }
     if (entity[1] > 7) {
+      // Right wall
       [entity[15], entity[16], entity[17]] = reflect(entity, [-1, 0, 0]);
     }
     if (entity[2] < -7) {
+      // Floor
       [entity[15], entity[16], entity[17]] = reflect(entity, [0, 1, 0]);
     }
     if (entity[2] > 7) {
+      // Ceiling
       [entity[15], entity[16], entity[17]] = reflect(entity, [0, -1, 0]);
     }
     if (entity[3] < -15) {
+      // Far wall
       [entity[15], entity[16], entity[17]] = reflect(entity, [0, 0, 1]);
     }
     if (entity[3] > 7) {
+      // Near wall
       [entity[15], entity[16], entity[17]] = reflect(entity, [0, 0, -1]);
     }
 
@@ -346,12 +397,7 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
     constants: {
       ENTITY_COUNT: scene.entities.length,
       LIGHT_COUNT: scene.lights.length,
-      EMPTY: Entity.Type.EMPTY,
       SPHERE: Entity.Type.SPHERE,
-      CUBOID: Entity.Type.CUBOID,
-      CYLINDER: Entity.Type.CYLINDER,
-      CONE: Entity.Type.CONE,
-      TRIANGLE: Entity.Type.TRIANGLE,
       PLANE: Entity.Type.PLANE,
       LIGHTSPHERE: Entity.Type.LIGHTSPHERE
     }
@@ -376,28 +422,32 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
     pixelHeight: number) {
 
       // Kernel canary code
+      //
+      // This is to test the validity of the helper functions
+      // as GPU.js does not support the full JavaScript syntax.
+      // 
       // If any of these breaks, something is _really_ wrong.
-      var x1 = addX(1, 2, 3, 4, 5, 6);
-      var x2 = addY(1, 2, 3, 4, 5, 6);
-      var x3 = addZ(1, 2, 3, 4, 5, 6);
-      var x4 = subtractX(1, 2, 3, 4, 5, 6);
-      var x5 = subtractY(1, 2, 3, 4, 5, 6);
-      var x6 = subtractZ(1, 2, 3, 4, 5, 6);
-      var x7 = normalizeX(1, 2, 3);
-      var x8 = normalizeY(1, 2, 3);
-      var x9 = normalizeZ(1, 2, 3);
-      var x10 = dotProduct(1, 2, 3, 4, 5, 6);
-      var x11 = crossProductX(1, 2, 3, 4, 5, 6);
-      var x12 = crossProductY(1, 2, 3, 4, 5, 6);
-      var x13 = crossProductZ(1, 2, 3, 4, 5, 6);
-      var x14 = magnitude(1, 2, 3);
-      var x15 = scaleX(1, 2, 3, 4);
-      var x16 = scaleY(1, 2, 3, 4);
-      var x17 = scaleZ(1, 2, 3, 4);
-      var x18 = add3X(1, 2, 3, 4, 5, 6, 7, 8, 9);
-      var x19 = add3Y(1, 2, 3, 4, 5, 6, 7, 8, 9);
-      var x20 = add3Z(1, 2, 3, 4, 5, 6, 7, 8, 9);
-      var x21 = sphereIntersection(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+      // var x1 = addX(1, 2, 3, 4, 5, 6);
+      // var x2 = addY(1, 2, 3, 4, 5, 6);
+      // var x3 = addZ(1, 2, 3, 4, 5, 6);
+      // var x4 = subtractX(1, 2, 3, 4, 5, 6);
+      // var x5 = subtractY(1, 2, 3, 4, 5, 6);
+      // var x6 = subtractZ(1, 2, 3, 4, 5, 6);
+      // var x7 = normalizeX(1, 2, 3);
+      // var x8 = normalizeY(1, 2, 3);
+      // var x9 = normalizeZ(1, 2, 3);
+      // var x10 = dotProduct(1, 2, 3, 4, 5, 6);
+      // var x11 = crossProductX(1, 2, 3, 4, 5, 6);
+      // var x12 = crossProductY(1, 2, 3, 4, 5, 6);
+      // var x13 = crossProductZ(1, 2, 3, 4, 5, 6);
+      // var x14 = magnitude(1, 2, 3);
+      // var x15 = scaleX(1, 2, 3, 4);
+      // var x16 = scaleY(1, 2, 3, 4);
+      // var x17 = scaleZ(1, 2, 3, 4);
+      // var x18 = add3X(1, 2, 3, 4, 5, 6, 7, 8, 9);
+      // var x19 = add3Y(1, 2, 3, 4, 5, 6, 7, 8, 9);
+      // var x20 = add3Z(1, 2, 3, 4, 5, 6, 7, 8, 9);
+      // var x21 = sphereIntersection(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 
       // Raytracer start!
 
@@ -529,7 +579,7 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
             if (contribution > 0) {
               lambertAmount += contribution;
             }
-          } 
+          }
 
           lambertAmount = Math.min(1, lambertAmount);
           lambertRed += entityRed * lambertAmount * entityLambert;
@@ -639,3 +689,9 @@ document.getElementById('canvas').appendChild(canvas);
 
 var renderLoop = renderer(gpuKernel, cpuKernel, canvas, scene);
 window.onload = renderLoop;
+
+// var testKernel = gpu.createKernel(function(x) {
+//   return this.thread.x;
+// }).dimensions([20, 20, 20]).mode("cpu");
+
+// console.log(testKernel());
