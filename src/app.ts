@@ -98,7 +98,7 @@ let benchmark = (elem: HTMLInputElement) : void => {
 }
 
 // Main renderer
-var renderer = (gpuKernels: any[], cpuKernel: any, scene: Scene.Scene) : () => void => {
+var renderer = (gpuKernels: any[], cpuKernel: any[], scene: Scene.Scene) : () => void => {
 
   let camera = scene.camera,
     lights = scene.lights,
@@ -179,28 +179,32 @@ var renderer = (gpuKernels: any[], cpuKernel: any, scene: Scene.Scene) : () => v
     var startTime, endTime;
     if (mode == Mode.CPU) {
       if (bm.isBenchmarking) { startTime = performance.now(); }
-      cpuKernel(
-        camera, lights, entities,
-        eyeVector, vpRight, vpUp,
-        canvasHeight, canvasWidth, fovRadians,
-        heightWidthRatio, halfWidth, halfHeight,
-        cameraWidth, cameraHeight, pixelWidth,
-        pixelHeight
-      );
-      if (bm.isBenchmarking) { endTime = performance.now(); }
-      if (canvasNeedsUpdate) {
-        // Do not waste cycles replacing the canvas0
-        // if the mode did not change.
-        canvasNeedsUpdate = false;
-        let cv = document.getElementsByTagName("canvas")[0];
-        let bdy = cv.parentNode;
-        let newCanvas = cpuKernel.getCanvas();
-        bdy.replaceChild(newCanvas, cv);
+      for (let i = 0; i < cpuKernels.length; i++) {
+        let cpuKernel = cpuKernels[i];
+        cpuKernel(
+          camera, lights, entities,
+          eyeVector, vpRight, vpUp,
+          canvasHeight, canvasWidth, fovRadians,
+          heightWidthRatio, halfWidth, halfHeight,
+          cameraWidth, cameraHeight, 
+          pixelWidth, pixelHeight,
+          i % 2, Math.floor(i / 2)
+        );
+        if (canvasNeedsUpdate) {
+          // Do not waste cycles replacing the canvas0
+          // if the mode did not change.
+          let cv = document.getElementById("canvas" + i).childNodes[0];
+          let bdy = cv.parentNode;
+          let newCanvas = cpuKernel.getCanvas();
+          bdy.replaceChild(newCanvas, cv);
+        }
       }
+      if (canvasNeedsUpdate) { canvasNeedsUpdate = false; }
+      if (bm.isBenchmarking) { endTime = performance.now(); }
     } else {
+      if (bm.isBenchmarking) { startTime = performance.now(); }
       for (let i = 0; i < gpuKernels.length; i++) {
         let gpuKernel = gpuKernels[i];
-        if (bm.isBenchmarking) { startTime = performance.now(); }
         gpuKernel(
           camera, lights, entities,
           eyeVector, vpRight, vpUp,
@@ -210,15 +214,15 @@ var renderer = (gpuKernels: any[], cpuKernel: any, scene: Scene.Scene) : () => v
           pixelWidth, pixelHeight,
           i % 2, Math.floor(i / 2)
         );
-        if (bm.isBenchmarking) { endTime = performance.now(); }
         if (canvasNeedsUpdate) {
-          canvasNeedsUpdate = false;
           let cv = document.getElementById("canvas" + i).childNodes[0];
           let bdy = cv.parentNode;
           let newCanvas = gpuKernel.getCanvas();
           bdy.replaceChild(newCanvas, cv);
         }
       }
+      if (canvasNeedsUpdate) { canvasNeedsUpdate = false; }
+      if (bm.isBenchmarking) { endTime = performance.now(); }
     }
 
     for (let idx = 0; idx < entities.length; idx++){
@@ -685,19 +689,20 @@ addFunctions(gpu, vectorFunctions);
 addFunctions(gpu, utilityFunctions);
 
 let scene = Scene.generateScene();
-var gpuKernel = createKernel(Mode.GPU, scene);
-var gpuKernel1 = createKernel(Mode.GPU, scene);
-var gpuKernel2 = createKernel(Mode.GPU, scene);
-var gpuKernel3 = createKernel(Mode.GPU, scene);
-var cpuKernel = createKernel(Mode.CPU, scene);
 
-document.getElementById('canvas0').appendChild(gpuKernel.getCanvas());
-document.getElementById('canvas1').appendChild(gpuKernel1.getCanvas());
-document.getElementById('canvas2').appendChild(gpuKernel2.getCanvas());
-document.getElementById('canvas3').appendChild(gpuKernel3.getCanvas());
+let kernelCount = 4;
+let gpuKernels = [];
+let cpuKernels = [];
+for (let i = 0; i < kernelCount; i++) {
+  let kernel = createKernel(Mode.GPU, scene);
+  gpuKernels.push(kernel);
+  document.getElementById('canvas' + i).appendChild(kernel.getCanvas());
+
+  cpuKernels.push(createKernel(Mode.CPU, scene));
+}
 
 var renderLoop = function() { 
-  return renderer([gpuKernel, gpuKernel1, gpuKernel2, gpuKernel3], cpuKernel, scene);
+  return renderer(gpuKernels, cpuKernels, scene);
 }();
 window.onload = renderLoop;
 
