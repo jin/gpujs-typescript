@@ -115,7 +115,7 @@ namespace Scene {
   }]
 
   let opts: Entity.Opts[] = 
-    generateRandomSpheres(8)
+    generateRandomSpheres(4)
     .concat(light_opts)
     // .concat(plane_opts);
 
@@ -185,6 +185,7 @@ namespace Scene {
     entities = opts.map(function(opt) {
       return new Entity.Entity(opt);
     }).map(ent => ent.toVector());
+    return entities;
   }
 
 }

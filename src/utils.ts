@@ -10,5 +10,3 @@ function dist(x1: number, y1: number, x2: number, y2: number) : number {
 let rand = (min, max) => {
   return Math.random() * (max - min) + min;
 }
-
-let utilityFunctions = [square, dist];
