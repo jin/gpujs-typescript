@@ -3,6 +3,9 @@
 // At any point in time, the mode is either GPU or CPU.
 enum Mode { GPU, CPU }
 
+// Default to a single GPU kernel/canvas
+var kernelDimension = kernelDimension || 1;
+
 // Global states
 var mode = Mode.GPU // Initial mode
 
@@ -188,7 +191,7 @@ var renderer = (gpuKernels: any[], cpuKernel: any[], scene: Scene.Scene) : () =>
           heightWidthRatio, halfWidth, halfHeight,
           cameraWidth, cameraHeight, 
           pixelWidth, pixelHeight,
-          i % 2, Math.floor(i / 2)
+          i % kernelDimension, Math.floor(i / kernelDimension)
         );
         if (canvasNeedsUpdate) {
           // Do not waste cycles replacing the canvas0
@@ -212,7 +215,7 @@ var renderer = (gpuKernels: any[], cpuKernel: any[], scene: Scene.Scene) : () =>
           heightWidthRatio, halfWidth, halfHeight,
           cameraWidth, cameraHeight,
           pixelWidth, pixelHeight,
-          i % 2, Math.floor(i / 2)
+          i % kernelDimension, Math.floor(i / kernelDimension)
         );
         if (canvasNeedsUpdate) {
           let cv = document.getElementById("canvas" + i).childNodes[0];
@@ -397,7 +400,7 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
 
   const opt: KernelOptions = {
     mode: stringOfMode(mode),
-    dimensions: [scene.canvasWidth / 2, scene.canvasHeight / 2],
+    dimensions: [scene.canvasWidth / kernelDimension, scene.canvasHeight / kernelDimension],
     debug: false,
     graphical: true,
     safeTextureReadHack: false,
@@ -441,7 +444,7 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
       // var x3 = addZ(1, 2, 3, 4, 5, 6);
       // var x4 = subtractX(1, 2, 3, 4, 5, 6);
       // var x5 = subtractY(1, 2, 3, 4, 5, 6);
-      // var x6 = subtractZ(1, 2, 3, 4, 5, 6);
+      // var x6 = subtractZ(1,  3, 4, 5, 6);
       // var x7 = normalizeX(1, 2, 3);
       // var x8 = normalizeY(1, 2, 3);
       // var x9 = normalizeZ(1, 2, 3);
@@ -460,8 +463,8 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
 
       // Raytracer start!
 
-      var x = this.thread.x + (320 * xOffset);
-      var y = this.thread.y + (320 * yOffset);
+      var x = this.thread.x + (this.dimensions.x * xOffset);
+      var y = this.thread.y + (this.dimensions.y * yOffset);
 
       var xCompX = vpRight[0] * (x * pixelWidth - halfWidth);
       var xCompY = vpRight[1] * (x * pixelWidth - halfWidth);
@@ -484,9 +487,9 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
       var normRayVecZ = normalizeZ(rayVecX, rayVecY, rayVecZ);
 
       // default background color
-      var red = 0.20;
-      var green = 0.20;
-      var blue = 0.20;
+      var red = 0.80;
+      var green = 0.85;
+      var blue = 0.81;
 
       var nearestEntityIndex = -1;
       var maxEntityDistance = 2 ** 32; // All numbers in GPU.js are of Float32 type
@@ -690,7 +693,7 @@ addFunctions(gpu, utilityFunctions);
 
 let scene = Scene.generateScene();
 
-let kernelCount = 4;
+let kernelCount = kernelDimension * kernelDimension;
 let gpuKernels = [];
 let cpuKernels = [];
 for (let i = 0; i < kernelCount; i++) {

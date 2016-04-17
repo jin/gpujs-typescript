@@ -27,6 +27,11 @@
         list-style: none;
       }
 
+      span.canvas {
+        padding-left: 2px;
+        padding-right: 2px;
+      }
+
     </style>
   </head>
   <body>
@@ -56,17 +61,30 @@
         <div id="speedup"></div>
         <div id="results"></div>
       </div>
-      <div class="right-col">
-        <div>
-          <span id="canvas2"></span>
-          <span id="canvas3"></span>
-        </div>
-        <div>
-          <span id="canvas0"></span>
-          <span id="canvas1"></span>
-        </div>
+      <div class="right-col" id="canvas-container">
       </div>
     </div>
+
+    <!-- Generate the canvas elements based on the kernel dimensions -->
+    <script type="text/javascript" charset="utf-8">
+      var kernelDimension = 4;
+
+      var canvasContainer = document.getElementById("canvas-container");
+      var divs = [];
+      for (let i = 0; i < kernelDimension; i++) {
+        var divElem = document.createElement('div');
+        for (let j = 0; j < kernelDimension; j++) {
+          let spanElem = document.createElement('span');
+          spanElem.id = "canvas" + (j + (i * kernelDimension));
+          spanElem.className = "canvas"
+          divElem.appendChild(spanElem)
+        }
+        divs.push(divElem);
+      }
+      for (let i = divs.length - 1; i >= 0; i--) {
+        canvasContainer.appendChild(divs[i]);
+      }
+    </script>
     <script src="vendor/gpu.js" type="text/javascript" charset="utf-8"></script>
     <script src="lib/app.js?nocache" type="text/javascript" charset="utf-8" async></script>
   </body>
