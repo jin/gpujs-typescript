@@ -4,7 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
     <title>GPU.js Raytracer</title>
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
     <style type="text/css" media="all">
+
+      body {
+        font-family: 'Open Sans', sans-serif;
+      }
 
       .flex-container {
         display: -ms-flex;
@@ -19,14 +24,17 @@
       }
 
       .flex-container div.right-col {
-        margin-left: 10px;
-        margin-right: 10px;
         width: 60%;
       }
 
       ul {
         padding-left: 10px;
         list-style: none;
+      }
+
+      span.canvas {
+        padding-left: 2px;
+        padding-right: 2px;
       }
 
     </style>
@@ -36,19 +44,34 @@
       <div class="left-col">
         <p>A parallel raytracer built with TypeScript and <a href="http://gpu.rocks">GPU.js</a> (WebGL/GLSL).</p>
 
-        <p>WASD to move around.</p>
+        <p>Press W, A, S, D to move the camera around.</p>
 
         <p>
-          Current mode: <span id="mode">GPU</span>
+          <h3>Current mode</h3>
+          <span id="mode">GPU</span>
           <input type="button" value="Switch mode" onclick="toggleMode()" />
         </p>
         <p>
-          FPS: <span id="fps">Loading..</span>
+          <h3>FPS</h3><span id="fps">Loading..</span>
           <input type="button" value="Pause" onclick="togglePause(this)" />
         </p>
-        <!-- <p> -->
-        <!--   Number of spheres: <span id="sphere-count">4</span> <input type="range" name="points" min="1" max="5" value="4" onchange="updateSlider(this)"> -->
-        <!-- </p> -->
+        <p>
+          <h3>Number of spheres</h3>
+          <span id="sphere-count">4</span> <input type="range" name="points" min="1" max="20" value="4" onchange="updateSphereSlider(this)">
+        </p>
+
+        <p>
+          <h3>Grid dimension</h3>
+          <span id="grid-dimension">2</span> <input type="range" name="points" min="1" max="4" value="2" id="dimension-slider" onchange="updateDimension(this)">
+        </p>
+        <p>
+          <!-- Capped at 4. -->
+          <!-- WARNING: Too many active WebGL contexts. Oldest context will be lost. -->
+          The canvas is 640px by 640px. Each canvas object is controlled by a single GPU.js kernel and a single thread is spawned for each pixel to compute the color of the pixel. <br />
+
+          Increase the dimensions of the grid to break the canvas up into tiles, so that there are multiple kernels controlling multiple tiles. With this approach, the kernels will run sequentially, computing one canvas after another. <br />
+
+        </p>
 
         <p>
           Benchmark the performance of the parallelized GPU and sequential CPU kernels.
@@ -58,9 +81,10 @@
         <div id="speedup"></div>
         <div id="results"></div>
       </div>
-      <div class="right-col" id="canvas">
-      </div>
+      <div class="right-col" id="canvas-container"></div>
     </div>
+
+    <!-- Generate the canvas elements based on the kernel dimensions -->
     <script src="vendor/gpu.js" type="text/javascript" charset="utf-8"></script>
     <script src="lib/app.js?nocache" type="text/javascript" charset="utf-8" async></script>
   </body>

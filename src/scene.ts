@@ -84,7 +84,7 @@ namespace Scene {
         {
           entityType: Entity.Type.SPHERE,
           red: rand(0.05, 0.95), green: rand(0.05, 0.95), blue: rand(0.05, 0.95),
-          x: rand(-7, 7) /* so they don't get stuck */, y: rand(0, 7), z: rand(-7, 2), radius: rand(0.3, 2.8),
+          x: rand(-7, 7) /* so they don't get stuck */, y: rand(0, 7), z: rand(-7, 2), radius: rand(0.3, 2.5),
           specularReflection: rand(0.1, 0.2), lambertianReflection: rand(0.8, 1), 
           ambientColor: rand(0.1, 0.4), opacity: rand(0, 1),
           directionX: rand(minDirection, maxDirection), 
@@ -185,6 +185,7 @@ namespace Scene {
     entities = opts.map(function(opt) {
       return new Entity.Entity(opt);
     }).map(ent => ent.toVector());
+    return entities;
   }
 
 }

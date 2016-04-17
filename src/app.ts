@@ -3,6 +3,18 @@
 // At any point in time, the mode is either GPU or CPU.
 enum Mode { GPU, CPU }
 
+var gpu = new GPU();
+
+// Default to a single GPU kernel/canvas
+var kernelDimension = kernelDimension || 2;
+if (sessionStorage.getItem("kernelDimension")) {
+  kernelDimension = parseInt(sessionStorage.getItem("kernelDimension"));
+  let slider: any = document.getElementById("dimension-slider");
+  slider.value = kernelDimension;
+  let label: any = document.getElementById("grid-dimension");
+  label.innerHTML = kernelDimension;
+}
+
 // Global states
 var mode = Mode.GPU // Initial mode
 
@@ -39,17 +51,66 @@ let updateFPS = (fps: string) : void => {
   f.innerHTML = fps.toString();
 }
 
-// let updateSlider = (elem: HTMLInputElement) : void => {
-//   isRunning = false;
-//   document.getElementById('sphere-count').innerHTML = elem.value;
-//   Scene.updateSphereCount(parseInt(elem.value));
-//   setTimeout(() => {
-//     renderLoop = renderer(gpuKernel, cpuKernel, canvas, Scene.generateScene());
-//     canvasNeedsUpdate = true; // signal canvas replacement to renderer
-//     isRunning = true;
-//     if (isRunning) { renderLoop() };
-//   }, 1000)
-// }
+let updateDimension = (elem: HTMLInputElement) : void => {
+  renderLoop = null;
+  kernelDimension = parseInt(elem.value);
+  sessionStorage.setItem("kernelDimension", JSON.stringify(kernelDimension));
+  isRunning = false;
+  document.getElementById('grid-dimension').innerHTML = elem.value;
+  [gpuKernels, cpuKernels] = generateKernels(kernelDimension, scene);
+  canvasNeedsUpdate = true
+  renderLoop = renderer(gpuKernels, cpuKernels, scene);
+  setTimeout(() => {
+    isRunning = true;
+    renderLoop();
+  }, 1000);
+}
+
+function generateCanvasGrid(dim) {
+  var canvasContainer = document.getElementById("canvas-container");
+  var divs = [];
+  for (let i = 0; i < dim; i++) {
+    var divElem = document.createElement('div');
+    for (let j = 0; j < dim; j++) {
+      let spanElem = document.createElement('span');
+      spanElem.id = "canvas" + (j + (i * dim));
+      spanElem.className = "canvas"
+      divElem.appendChild(spanElem)
+    }
+    divs.push(divElem);
+  }
+  for (let i = divs.length - 1; i >= 0; i--) {
+    canvasContainer.appendChild(divs[i]);
+  }
+}
+
+function removeCanvasGrid() {
+  var canvasContainer = document.getElementById("canvas-container");
+  while (canvasContainer.lastChild) {
+    for (let i = 0; i < canvasContainer.lastChild.childNodes.length; i++) {
+      canvasContainer.lastChild.childNodes[i] = null;
+    }
+    canvasContainer.removeChild(canvasContainer.lastChild);
+  }
+}
+
+let updateSphereSlider = (elem: HTMLInputElement) : void => {
+  isRunning = false;
+  document.getElementById('sphere-count').innerHTML = elem.value;
+  updateSphereCount(parseInt(elem.value));
+}
+
+let updateSphereCount = (count) : void => {
+  let newEntities = Scene.updateSphereCount(count);
+  scene.entities = newEntities;
+  [gpuKernels, cpuKernels] = generateKernels(kernelDimension, scene);
+  renderLoop = renderer(gpuKernels, cpuKernels, scene);
+  canvasNeedsUpdate = true; // signal canvas0 replacement to renderer
+  setTimeout(() => {
+    isRunning = true;
+    if (isRunning) { renderLoop() };
+  }, 1000)
+}
 
 // Benchmarking binding.
 //
@@ -98,8 +159,7 @@ let benchmark = (elem: HTMLInputElement) : void => {
 }
 
 // Main renderer
-var renderer = (gpuKernel: any, cpuKernel: any,
-                gpuCanvas: any, scene: Scene.Scene) : () => void => {
+var renderer = (gpuKernels: any[], cpuKernel: any[], scene: Scene.Scene) : () => void => {
 
   let camera = scene.camera,
     lights = scene.lights,
@@ -180,42 +240,50 @@ var renderer = (gpuKernel: any, cpuKernel: any,
     var startTime, endTime;
     if (mode == Mode.CPU) {
       if (bm.isBenchmarking) { startTime = performance.now(); }
-      cpuKernel(
-        camera, lights, entities,
-        eyeVector, vpRight, vpUp,
-        canvasHeight, canvasWidth, fovRadians,
-        heightWidthRatio, halfWidth, halfHeight,
-        cameraWidth, cameraHeight, pixelWidth,
-        pixelHeight
-      );
-      if (bm.isBenchmarking) { endTime = performance.now(); }
-      if (canvasNeedsUpdate) {
-        // Do not waste cycles replacing the canvas
-        // if the mode did not change.
-        canvasNeedsUpdate = false;
-        let cv = document.getElementsByTagName("canvas")[0];
-        let bdy = cv.parentNode;
-        let newCanvas = cpuKernel.getCanvas();
-        bdy.replaceChild(newCanvas, cv);
+      for (let i = 0; i < cpuKernels.length; i++) {
+        let cpuKernel = cpuKernels[i];
+        cpuKernel(
+          camera, lights, entities,
+          eyeVector, vpRight, vpUp,
+          canvasHeight, canvasWidth, fovRadians,
+          heightWidthRatio, halfWidth, halfHeight,
+          cameraWidth, cameraHeight, 
+          pixelWidth, pixelHeight,
+          i % kernelDimension, Math.floor(i / kernelDimension)
+        );
+        if (canvasNeedsUpdate) {
+          // Do not waste cycles replacing the canvas0
+          // if the mode did not change.
+          let cv = document.getElementById("canvas" + i).childNodes[0];
+          let bdy = cv.parentNode;
+          let newCanvas = cpuKernel.getCanvas();
+          bdy.replaceChild(newCanvas, cv);
+        }
       }
+      if (canvasNeedsUpdate) { canvasNeedsUpdate = false; }
+      if (bm.isBenchmarking) { endTime = performance.now(); }
     } else {
       if (bm.isBenchmarking) { startTime = performance.now(); }
-      gpuKernel(
-        camera, lights, entities,
-        eyeVector, vpRight, vpUp,
-        canvasHeight, canvasWidth, fovRadians,
-        heightWidthRatio, halfWidth, halfHeight,
-        cameraWidth, cameraHeight,
-        pixelWidth, pixelHeight
-      );
-      if (bm.isBenchmarking) { endTime = performance.now(); }
-      if (canvasNeedsUpdate) {
-        canvasNeedsUpdate = false;
-        let cv = document.getElementsByTagName("canvas")[0];
-        let bdy = cv.parentNode;
-        let newCanvas = gpuKernel.getCanvas();
-        bdy.replaceChild(newCanvas, cv);
+      for (let i = 0; i < gpuKernels.length; i++) {
+        let gpuKernel = gpuKernels[i];
+        gpuKernel(
+          camera, lights, entities,
+          eyeVector, vpRight, vpUp,
+          canvasHeight, canvasWidth, fovRadians,
+          heightWidthRatio, halfWidth, halfHeight,
+          cameraWidth, cameraHeight,
+          pixelWidth, pixelHeight,
+          i % kernelDimension, Math.floor(i / kernelDimension)
+        );
+        if (canvasNeedsUpdate) {
+          let cv = document.getElementById("canvas" + i).childNodes[0];
+          let bdy = cv.parentNode;
+          let newCanvas = gpuKernel.getCanvas();
+          bdy.replaceChild(newCanvas, cv);
+        }
       }
+      if (canvasNeedsUpdate) { canvasNeedsUpdate = false; }
+      if (bm.isBenchmarking) { endTime = performance.now(); }
     }
 
     for (let idx = 0; idx < entities.length; idx++){
@@ -390,7 +458,7 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
 
   const opt: KernelOptions = {
     mode: stringOfMode(mode),
-    dimensions: [scene.canvasWidth, scene.canvasHeight],
+    dimensions: [Math.floor(scene.canvasWidth / kernelDimension), Math.floor(scene.canvasHeight / kernelDimension)],
     debug: false,
     graphical: true,
     safeTextureReadHack: false,
@@ -419,7 +487,9 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
     cameraWidth: number,
     cameraHeight: number,
     pixelWidth: number,
-    pixelHeight: number) {
+    pixelHeight: number,
+    xOffset: number,
+    yOffset: number) {
 
       // Kernel canary code
       //
@@ -432,7 +502,7 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
       // var x3 = addZ(1, 2, 3, 4, 5, 6);
       // var x4 = subtractX(1, 2, 3, 4, 5, 6);
       // var x5 = subtractY(1, 2, 3, 4, 5, 6);
-      // var x6 = subtractZ(1, 2, 3, 4, 5, 6);
+      // var x6 = subtractZ(1,  3, 4, 5, 6);
       // var x7 = normalizeX(1, 2, 3);
       // var x8 = normalizeY(1, 2, 3);
       // var x9 = normalizeZ(1, 2, 3);
@@ -451,8 +521,8 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
 
       // Raytracer start!
 
-      var x = this.thread.x;
-      var y = this.thread.y;
+      var x = this.thread.x + (this.dimensions.x * xOffset);
+      var y = this.thread.y + (this.dimensions.y * yOffset);
 
       var xCompX = vpRight[0] * (x * pixelWidth - halfWidth);
       var xCompY = vpRight[1] * (x * pixelWidth - halfWidth);
@@ -475,9 +545,9 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
       var normRayVecZ = normalizeZ(rayVecX, rayVecY, rayVecZ);
 
       // default background color
-      var red = 0.20;
-      var green = 0.20;
-      var blue = 0.20;
+      var red = 0.80;
+      var green = 0.85;
+      var blue = 0.81;
 
       var nearestEntityIndex = -1;
       var maxEntityDistance = 2 ** 32; // All numbers in GPU.js are of Float32 type
@@ -673,21 +743,30 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
     }, opt);
 }
 
+let generateKernels = (dim, scene) => {
+  removeCanvasGrid();
+  generateCanvasGrid(dim);
+  let kernelCount = dim * dim;
+  let gpuKernels = [];
+  let cpuKernels = [];
+  for (let i = 0; i < kernelCount; i++) {
+    let kernel = createKernel(Mode.GPU, scene);
+    gpuKernels.push(kernel);
+    document.getElementById('canvas' + i).appendChild(kernel.getCanvas());
+
+    cpuKernels.push(createKernel(Mode.CPU, scene));
+  }
+  return [gpuKernels, cpuKernels];
+}
+
 let addFunctions = (gpu: any, functions: any[]) => functions.forEach(f => gpu.addFunction(f));
 
-var gpu = new GPU();
 addFunctions(gpu, vectorFunctions);
 addFunctions(gpu, utilityFunctions);
 
 let scene = Scene.generateScene();
-var gpuKernel = createKernel(Mode.GPU, scene);
-var cpuKernel = createKernel(Mode.CPU, scene);
-
-var canvas = gpuKernel.getCanvas();
-
-document.getElementById('canvas').appendChild(canvas);
-
-var renderLoop = renderer(gpuKernel, cpuKernel, canvas, scene);
+let [gpuKernels, cpuKernels] = generateKernels(kernelDimension, scene);
+var renderLoop = renderer(gpuKernels, cpuKernels, scene);
 window.onload = renderLoop;
 
 // var testKernel = gpu.createKernel(function(x) {
