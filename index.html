@@ -57,7 +57,7 @@
         </p>
         <p>
           <h3>Number of spheres</h3>
-          <span id="sphere-count">4</span> <input type="range" name="points" min="1" max="20" value="4" onchange="updateSphereSlider(this)">
+          <span id="sphere-count">4</span> <input type="range" name="points" min="1" max="30" value="4" onchange="updateSphereSlider(this)">
         </p>
 
         <p>
@@ -74,9 +74,12 @@
         </p>
 
         <p>
+          <h3>Benchmark</h3>
+          <div>
+            <input type="button" value="Benchmark" onclick="benchmark(this)" />
+          </div>
           Benchmark the performance of the parallelized GPU and sequential CPU kernels.
           This will render 30 frames each and compute min, max, median frame rendering durations, and speedups. <br />
-          <input type="button" value="Benchmark" onclick="benchmark(this)" />
         </p>
         <div id="speedup"></div>
         <div id="results"></div>

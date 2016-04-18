@@ -9,13 +9,14 @@ namespace Benchmark {
     mode: string
     framesToRender: number
     callback: () => void
+    startTime: number
 
     constructor() {
       this.mode = "";
       this.benchmarkDuration = 8000;
       this.resetBenchmark();
       this.resultHistory = [];
-      this.framesToRender = 30;
+      this.framesToRender = 60;
     }
 
     resetBenchmark() {
@@ -26,20 +27,21 @@ namespace Benchmark {
         totalFrameCount: 0,
         frameRenderDurations: []
       }
+      this.startTime = null;
     }
 
     startBenchmark(mode: string, callback) {
       this.resetBenchmark();
       this.setMode(mode);
       this.setCallback(callback);
+      this.startTime = performance.now();
 
       this.isBenchmarking = true;
     }
 
     stopBenchmark() {
       this.isBenchmarking = false;
-      this.latestResults.actualBenchmarkDuration =
-        this.latestResults.frameRenderDurations.reduce((a, b) => a + b);
+      this.latestResults.actualBenchmarkDuration = performance.now() - this.startTime;
 
       this.computeMinMaxAvg();
       this.saveResults();
@@ -65,35 +67,46 @@ namespace Benchmark {
     displaySpeedup(elem) {
       let cpuResults = JSON.parse(localStorage.getItem('cpu'));
       let gpuResults = JSON.parse(localStorage.getItem('gpu'));
-      // let avgSpeedup = cpuResults.avgFrameRenderDuration / gpuResults.avgFrameRenderDuration;
       let minSpeedup = cpuResults.minFrameRenderDuration / gpuResults.minFrameRenderDuration;
       let medianSpeedup = cpuResults.medianFrameRenderDuration / gpuResults.medianFrameRenderDuration;
+      let fpsSpeedup = gpuResults.averageFPS / cpuResults.averageFPS;
+      // elem.innerHTML = `Speedup ${fpsSpeedup} ${minSpeedup} ${medianSpeedup} <br /> ${elem.innerHTML} `;
       elem.innerHTML = `Speedups:
       <ul>
-        <li>${minSpeedup} ${medianSpeedup}</li>
+        <li>FPS speedup: ${fpsSpeedup}</li>
+        <li>Min frame render speedup: ${minSpeedup}</li>
+        <li>Median frame render speedup: ${medianSpeedup}</li>
       </ul>`;
-      // elem.innerHTML = `Speedups:
-      // <ul>
-      // <li>Min frame render speedup: ${minSpeedup}</li>
-      // <li>Median frame render speedup: ${medianSpeedup}</li>
-      // </ul>`;
     }
 
     displayResults(elem) {
+      let dimElem: any = document.getElementById('grid-dimension');
+      let sphereElem: any = document.getElementById('sphere-count');
+      // elem.innerHTML = `
+      // ${this.getResults().mode.toUpperCase()}
+      // ${dimElem.innerHTML}
+      // ${sphereElem.innerHTML}
+      // ${this.getResults().totalFrameCount}
+      // ${this.getResults().actualBenchmarkDuration}
+      // ${this.getResults().averageFPS}
+      // ${this.getResults().minFrameRenderDuration}
+      // ${this.getResults().medianFrameRenderDuration}
+      // <br />
+      // ${elem.innerHTML}
+      // `;
       elem.innerHTML = `
       <ul>
-      <li> Mode: ${this.getResults().mode.toUpperCase()} </li>
-      <li> Total frames rendered: ${this.getResults().totalFrameCount} </li>
-      <li> Actual time spent (ms): ${this.getResults().actualBenchmarkDuration} </li>
-      <li> Average FPS: ${this.getResults().averageFPS} </li>
-      <li> Frame render time - max (ms): ${this.getResults().maxFrameRenderDuration} </li>
-      <li> Frame render time - min (ms): ${this.getResults().minFrameRenderDuration} </li>
-      <li> Frame render time - avg (ms): ${this.getResults().avgFrameRenderDuration} </li>
-      <li> Frame render time - median (ms): ${this.getResults().medianFrameRenderDuration} </li>
+        <li> Mode: ${this.getResults().mode.toUpperCase()} </li>
+        <li> Dimension: ${dimElem.innerHTML} </li>
+        <li> Sphere count: ${sphereElem.innerHTML} </li>
+        <li> Total frames rendered: ${this.getResults().totalFrameCount} </li>
+        <li> Actual time spent (ms): ${this.getResults().actualBenchmarkDuration} </li>
+        <li> Average FPS: ${this.getResults().averageFPS} </li>
+        <li> Frame render time - min (ms): ${this.getResults().minFrameRenderDuration} </li>
+        <li> Frame render time - median (ms): ${this.getResults().medianFrameRenderDuration} </li>
       </ul>
       ${elem.innerHTML}
       `;
-
     }
 
     setMode(mode) {
