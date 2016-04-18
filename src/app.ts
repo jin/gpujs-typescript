@@ -537,9 +537,9 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
       var normRayVecZ = normalizeZ(rayVecX, rayVecY, rayVecZ);
 
       // default background color
-      var red = 0.80;
-      var green = 0.85;
-      var blue = 0.81;
+      var red = 0.30;
+      var green = 0.35;
+      var blue = 0.31;
 
       var nearestEntityIndex = -1;
       var maxEntityDistance = 2 ** 32; // All numbers in GPU.js are of Float32 type
