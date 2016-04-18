@@ -148,6 +148,7 @@ let benchmark = (elem: HTMLInputElement) : void => {
 
       bm.displayResults(resultsElem);
       bm.displaySpeedup(speedupElem);
+      // bm.displaySpeedup(speedupElem);
 
       toggleMode() // Toggle back to original mode
 
@@ -237,9 +238,10 @@ var renderer = (gpuKernels: any[], cpuKernel: any[], scene: Scene.Scene) : () =>
       updateFPS(fps.getFPS().toString());
     }
 
+    if (bm.isBenchmarking) { startTime = performance.now(); }
+
     var startTime, endTime;
     if (mode == Mode.CPU) {
-      if (bm.isBenchmarking) { startTime = performance.now(); }
       for (let i = 0; i < cpuKernels.length; i++) {
         let cpuKernel = cpuKernels[i];
         cpuKernel(
@@ -261,9 +263,7 @@ var renderer = (gpuKernels: any[], cpuKernel: any[], scene: Scene.Scene) : () =>
         }
       }
       if (canvasNeedsUpdate) { canvasNeedsUpdate = false; }
-      if (bm.isBenchmarking) { endTime = performance.now(); }
     } else {
-      if (bm.isBenchmarking) { startTime = performance.now(); }
       for (let i = 0; i < gpuKernels.length; i++) {
         let gpuKernel = gpuKernels[i];
         gpuKernel(
@@ -283,7 +283,6 @@ var renderer = (gpuKernels: any[], cpuKernel: any[], scene: Scene.Scene) : () =>
         }
       }
       if (canvasNeedsUpdate) { canvasNeedsUpdate = false; }
-      if (bm.isBenchmarking) { endTime = performance.now(); }
     }
 
     for (let idx = 0; idx < entities.length; idx++){
@@ -292,19 +291,12 @@ var renderer = (gpuKernels: any[], cpuKernel: any[], scene: Scene.Scene) : () =>
 
     entities = checkSphereSphereCollision(entities);
 
-    // If in benchmarking mode, set a longer timeout delay to
-    // provide a buffer for any overhead.
-    //
-    // Since we are measuring the raw time taken to render a
-    // single frame, we should not render the next frame
-    // as fast as possible as this might incur unneeded
-    // processor cycles and starve the actual benchmark
-    // requirements.
+    if (bm.isBenchmarking) { endTime = performance.now(); }
     if (bm.isBenchmarking) {
       let timeTaken = endTime - startTime;
       bm.addFrameGenDuration(timeTaken);
       bm.incrementTotalFrameCount();
-      setTimeout(renderLoop, 300);
+      setTimeout(nextTick, 1);
     } else {
       requestAnimationFrame(nextTick);
     }
@@ -545,9 +537,9 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
       var normRayVecZ = normalizeZ(rayVecX, rayVecY, rayVecZ);
 
       // default background color
-      var red = 0.80;
-      var green = 0.85;
-      var blue = 0.81;
+      var red = 0.30;
+      var green = 0.35;
+      var blue = 0.31;
 
       var nearestEntityIndex = -1;
       var maxEntityDistance = 2 ** 32; // All numbers in GPU.js are of Float32 type
@@ -619,12 +611,15 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
           var vecToLightY = sphereNormalY(intersectPtX, intersectPtY, intersectPtZ, lightPtX, lightPtY, lightPtZ);
           var vecToLightZ = sphereNormalZ(intersectPtX, intersectPtY, intersectPtZ, lightPtX, lightPtY, lightPtZ);
 
+          // defaults to false
           var shadowCast = -1;
 
           var lambertAmount = 0;
 
           var entityLambert = entities[nearestEntityIndex][11];
 
+          // Iterate through all entities and see 
+          // if any of them are blocking the light ray vector
           for (var j = 0; j < this.constants.ENTITY_COUNT; j++) {
             if (entities[j][0] == this.constants.SPHERE) {
               var distance = sphereIntersection(
@@ -634,6 +629,9 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
                 vecToLightX, vecToLightY, vecToLightZ
               );
 
+              // This should be more than or equals to zero,
+              // but due to JavaScript's float inaccuracy, we need to
+              // tune it down a little to a small negative value.
               if (distance > -0.005) {
                 shadowCast = 1;
               }
@@ -641,6 +639,9 @@ var createKernel = (mode: Mode, scene: Scene.Scene) : any => {
             }
           }
 
+          // If no shadow is cast, we can increase the
+          // lambertian multiplier so that the area 
+          // seem "lit up"
           if (shadowCast < 0) {
             var contribution = dotProduct(
               vecToLightX, vecToLightY, vecToLightZ,
