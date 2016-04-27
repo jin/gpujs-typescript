@@ -291,9 +291,8 @@ var renderer = (gpuKernels: any[], cpuKernel: any[], scene: Scene.Scene) : () =>
 
     entities = checkSphereSphereCollision(entities);
 
-    if (bm.isBenchmarking) { endTime = performance.now(); }
     if (bm.isBenchmarking) {
-      let timeTaken = endTime - startTime;
+      let timeTaken = performance.now() - startTime;
       bm.addFrameGenDuration(timeTaken);
       bm.incrementTotalFrameCount();
       setTimeout(nextTick, 1);
