@@ -9,9 +9,9 @@
     "allowJs": true,
     "watch": true,
     "target": "es5",
-    "out": "./lib/app.js"
+    "outDir": ".../lib/"
   },
   "files": [
-    "src/app.ts"
+    "app.ts"
   ]
 }
