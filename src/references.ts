@@ -5,3 +5,4 @@
 /// <reference path="scene.ts" />
 /// <reference path="benchmark.ts" />
 /// <reference path="../vendor/gpu.d.ts" />
+/// <reference path="typings/main.d.ts" />

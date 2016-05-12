@@ -1,7 +1,5 @@
 {
   "compilerOptions": {
-    "allowUnreachableCode": true,
-    "allowUnusedLabels": true,
     "noImplicitAny": false,
     "removeComments": true,
     "preserveConstEnums": true,

@@ -492,6 +492,10 @@ var Mode;
     Mode[Mode["GPU"] = 0] = "GPU";
     Mode[Mode["CPU"] = 1] = "CPU";
 })(Mode || (Mode = {}));
+var reducer = function (action, state) {
+    return state;
+};
+var store = Redux.createStore(reducer);
 var gpu = new GPU();
 var kernelDimension = kernelDimension || 2;
 if (sessionStorage.getItem("kernelDimension")) {

@@ -3,6 +3,11 @@
 // At any point in time, the mode is either GPU or CPU.
 enum Mode { GPU, CPU }
 
+let reducer = (action, state) => {
+  return state;
+}
+
+var store = Redux.createStore(reducer);
 var gpu = new GPU();
 
 // Default to a single GPU kernel/canvas
