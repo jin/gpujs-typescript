@@ -3,11 +3,40 @@
 // At any point in time, the mode is either GPU or CPU.
 enum Mode { GPU, CPU }
 
-let reducer = (action, state) => {
-  return state;
+// Action type
+const TOGGLE_MODE = "TOGGLE_MODE";
+
+const initialState = {
+  mode: Mode.GPU
+}
+
+let toggleModeAction = () => {
+  return {
+    type: TOGGLE_MODE
+  };
+}
+
+let reducer = (state = initialState, action) => {
+  switch (action.type) {
+    case TOGGLE_MODE:
+      let newMode = (state.mode == Mode.GPU) ? Mode.CPU : Mode.GPU;
+      return Object.assign({}, state, { 
+        mode: newMode 
+      });
+    default:
+      return state;
+  }
 }
 
 var store = Redux.createStore(reducer);
+
+let unsubscribe = store.subscribe(() => {
+  console.log(store.getState());
+  canvasNeedsUpdate = true;
+  const state = store.getState();
+  document.getElementById('mode').innerHTML = stringOfMode(state.mode).toUpperCase();
+})
+
 var gpu = new GPU();
 
 // Default to a single GPU kernel/canvas
@@ -19,9 +48,6 @@ if (sessionStorage.getItem("kernelDimension")) {
   let label: any = document.getElementById("grid-dimension");
   label.innerHTML = kernelDimension;
 }
-
-// Global states
-var mode = Mode.GPU // Initial mode
 
 // Mostly used when switching between modes, since
 // the CPU and GPU kernel has canvases with different
@@ -45,12 +71,6 @@ let togglePause = (el: HTMLInputElement) : void => {
   if (isRunning) { renderLoop() };
 }
 
-let toggleMode = () : void => {
-  canvasNeedsUpdate = true; // signal canvas replacement to renderer
-  mode = (mode == Mode.GPU) ? Mode.CPU : Mode.GPU;
-  document.getElementById('mode').innerHTML = stringOfMode(mode).toUpperCase();
-}
-
 let updateFPS = (fps: string) : void => {
   var f = document.querySelector("#fps");
   f.innerHTML = fps.toString();
@@ -71,7 +91,7 @@ let updateDimension = (elem: HTMLInputElement) : void => {
   }, 1000);
 }
 
-function generateCanvasGrid(dim) {
+let generateCanvasGrid = (dim) => {
   var canvasContainer = document.getElementById("canvas-container");
   var divs = [];
   for (let i = 0; i < dim; i++) {
@@ -89,7 +109,7 @@ function generateCanvasGrid(dim) {
   }
 }
 
-function removeCanvasGrid() {
+let removeCanvasGrid = () => {
   var canvasContainer = document.getElementById("canvas-container");
   while (canvasContainer.lastChild) {
     for (let i = 0; i < canvasContainer.lastChild.childNodes.length; i++) {
@@ -143,19 +163,20 @@ let benchmark = (elem: HTMLInputElement) : void => {
   updateFPS("Benchmarking..")
 
   // Benchmark current mode
-  bm.startBenchmark(stringOfMode(mode), () => {
+  bm.startBenchmark(stringOfMode(store.getState().mode), () => {
 
     bm.displayResults(resultsElem);
-    toggleMode()
+    store.dispatch(toggleModeAction());
 
     // Benchmark the other mode
-    bm.startBenchmark(stringOfMode(mode), () => {
+    bm.startBenchmark(stringOfMode(store.getState().mode), () => {
 
       bm.displayResults(resultsElem);
       bm.displaySpeedup(speedupElem);
       // bm.displaySpeedup(speedupElem);
 
-      toggleMode() // Toggle back to original mode
+      // toggleMode() // Toggle back to original mode
+      store.dispatch(toggleModeAction());
 
       elem.value = "Benchmark";
       elem.disabled = false;
@@ -246,7 +267,7 @@ var renderer = (gpuKernels: any[], cpuKernel: any[], scene: Scene.Scene) : () =>
     if (bm.isBenchmarking) { startTime = performance.now(); }
 
     var startTime, endTime;
-    if (mode == Mode.CPU) {
+    if (store.getState().mode == Mode.CPU) {
       for (let i = 0; i < cpuKernels.length; i++) {
         let cpuKernel = cpuKernels[i];
         cpuKernel(
@@ -773,9 +794,3 @@ let scene = Scene.generateScene();
 let [gpuKernels, cpuKernels] = generateKernels(kernelDimension, scene);
 var renderLoop = renderer(gpuKernels, cpuKernels, scene);
 window.onload = renderLoop;
-
-// var testKernel = gpu.createKernel(function(x) {
-//   return this.thread.x;
-// }).dimensions([20, 20, 20]).mode("cpu");
-
-// console.log(testKernel());

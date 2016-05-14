@@ -50,7 +50,7 @@
         <p>
           <h3>Current mode</h3>
           <span id="mode">GPU</span>
-          <input type="button" value="Switch mode" onclick="toggleMode()" />
+          <input type="button" value="Switch mode" onclick="store.dispatch(toggleModeAction())" />
         </p>
         <p>
           <h3>FPS</h3><span id="fps">Loading..</span>
@@ -94,7 +94,7 @@
     <!-- Generate the canvas elements based on the kernel dimensions -->
     <script src="vendor/react-15.0.2.min.js" type="text/javascript" charset="utf-8"></script>
     <script src="vendor/react-dom-15.0.2.min.js" type="text/javascript" charset="utf-8"></script>
-    <script src="vendor/redux.min.js" type="text/javascript" charset="utf-8"></script>
+    <!-- <script src="vendor/redux.min.js" type="text/javascript" charset="utf-8"></script> -->
     <script src="vendor/gpu.js" type="text/javascript" charset="utf-8"></script>
     <script src="public/app.js?nocache" type="text/javascript" charset="utf-8" async></script>
   </body>
