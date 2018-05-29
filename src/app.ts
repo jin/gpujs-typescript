@@ -20,7 +20,7 @@ let reducer = (state = initialState, action) => {
   switch (action.type) {
     case TOGGLE_MODE:
       let newMode = (state.mode == Mode.GPU) ? Mode.CPU : Mode.GPU;
-      return Object.assign({}, state, { 
+        return (<any>Object).assign({}, state, {
         mode: newMode 
       });
     default:
